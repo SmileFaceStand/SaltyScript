@@ -1,0 +1,5 @@
+Changelog
+
+- Added SmileScript to GitHub
+- Improved internal code
+- Fixed some bugs
