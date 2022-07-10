@@ -1,8 +1,5 @@
 ![SmileScript](https://user-images.githubusercontent.com/109024520/178143925-dd817165-189d-4879-8af3-a154b58e111f.png)
 
-
-
-
 # SmileScript
 SmileScript is my main script, developed for Stand, using the Stand API.
 
@@ -15,6 +12,7 @@ The first updates will be released very often, probably 1 update every 2 days, b
 ## Where do i report a problem?
 Describe the problem [here](https://github.com/SmileFaceStand/SmileScript/issues/new), and i'll soon as soon as possible.
 
-
-Special thanks to all Lua Retards that helped me on Discord.
-Credits to Nowiry for the Tall Cage
+## Installation
+- [Download](https://github.com/SmileFaceStand/SmileScript/releases/download/v0.1.1/SmileScript.lua) the required file
+- Drag this file in `Stand Folder > Lua Scripts`
+- In Stand, go to `Stand > Lua Scripts` and run `SmileScript`
