@@ -1,8 +1,7 @@
 --[[
 Script created by (=#1000
-Credits to aaron that helped me with PTFX
-Credits to lance's LanceScript where i got Clear World
-Credits to nowiry's WiriScript where i got Tall Cage
+Special thanks to all Lua Retards that helped me on Discord
+Credits to nowiry for the Tall Cage
 --]]
 
 util.require_natives(1651208000)
