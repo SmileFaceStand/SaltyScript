@@ -1,5 +1,64 @@
 Changelog
 
-- Added SmileScript on GitHub
-- Improved internal code
-- Fixed some bugs
+Additions
+- World > Clear World
+    - Improved Clear World
+    - Added Clear Peds toggle
+    - Added Clear Objects toggle
+    - Added Clear Vehicles toggle
+    - Added Exclude Personal Vehicles toggle
+- Online > Player > Trolling > Increase Wanted Level
+- Online > Player > Trolling > Cages
+    - Improved Cages
+    - Added Automatic Cage (Works with any cage)
+    - Added Box Cage
+    - Added Pipe Cage
+- Online > Player > Trolling > Entities
+    - Added Spawn Entities
+    - Added Entity Amount [0 to 50]
+    - Added Entity Type (40 entities!)
+        - Added Cone
+        - Added Pole
+        - Added Barrier
+        - Added Water Barrier
+        - Added Log
+        - Added Pipe
+        - Added Pizza
+        - Added Burger
+        - Added Fries
+        - Added Coke
+        - Added Beer
+        - Added Glass
+        - Added Coffee
+        - Added Panties
+        - Added Dildo
+        - Added Teddy Bear
+        - Added Fridge
+        - Added Washer
+        - Added Laptop
+        - Added Tablet
+        - Added Phone
+        - Added Money
+        - Added Gold Bar
+        - Added Dummy
+        - Added Coffin
+        - Added Death Body
+        - Added Umbrella
+        - Added Guitar
+        - Added Ferris Wheel
+        - Added Asteroid
+        - Added Trash Bag
+        - Added Bin
+        - Added Wheelchair
+        - Added Alien Egg
+        - Added Beachball
+        - Added Golfball
+        - Added Big Soccerball
+
+Adjustments
+    - Now to choose a cage to spawn there is a list selector
+    - Now each player has his own settings for the options (eg. If you set PTFX Amount 100 to the player "X", the player "Y" will not have PTFX Amount 100 too)
+    - Now on each menu tab there is the title of the menu at the top
+    - Major code improvement
+
+- Some other improvements and bug fixes
