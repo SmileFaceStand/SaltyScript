@@ -13,6 +13,6 @@ The first updates will be released very often, probably 1 update every 2 days, b
 Describe the problem [here](https://github.com/SmileFaceStand/SmileScript/issues/new), and i'll soon as soon as possible.
 
 ## Installation
-- [Download](https://github.com/SmileFaceStand/SmileScript/releases/download/v0.1.1/SmileScript.lua) the required file
+- [Download](https://github.com/SmileFaceStand/SmileScript/releases/latest) the required file
 - Drag this file in `Stand Folder > Lua Scripts`
 - In Stand, go to `Stand > Lua Scripts` and run `SmileScript`
