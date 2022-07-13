@@ -1,7 +1,7 @@
 Changelog
 
 Adjustments
-    - Now if some commands fail, they don't get stuck in a loop
+    - Now if some commands fail, it doesn't get stuck in a loop
     - Added missing dividers
     - Added some notifications
     - Added some functions
