@@ -1,28 +1,35 @@
 --[[
 Script created by (=#1000
-Special thanks to all Lua Retards that helped me on Discord
-Credits to nowiry for the Tall Cage
---]]
+
+Credits:
+Nowiry for the Tall Cage
+Lua Retards for helping me
+Lua Masters for helping me
+]]
 util.require_natives(1651208000)
 util.keep_running()
+util.toast("Welcome to SmileScript. Hope you'll enjoy! :)")
 
---> General Variables <--
-local self = {
-    playerId = players.user(),
-    playerPos = players.get_position(players.user()),
-    pedId = players.user_ped()
+--########################################################
+
+  ---------------------| Variables |---------------------
+
+--########################################################
+
+local my_player_id = players.user()
+local my_ped_id = players.user_ped()
+
+local local_settings = {
+    clear_world_vehs = true,
+    clear_world_peds = true,
+    clear_world_objs = true,
+    clear_world_pickups = true,
+    clear_world_ignore_personal_vehs = true
 }
 
-local localSettings = {
-    clearWorldPeds = true,
-    clearWorldObjects = true,
-    clearWorldVehicles = true,
-    clearWorldExclPersVeh = false
-}
+local player_settings = {}
 
-local playerSettings = {}
-
-local explosionTypes = {
+local exp_types = {
     [0] = {"Grenade"},
     [1] = {"Grenade Launcher"},
     [2] = {"Stickybomb"},
@@ -105,47 +112,75 @@ local explosionTypes = {
     [83] = {"EMP Launcher"}
 }
 
-local cageTypes = {
+local cage_types = {
     [0] = {
         "Standard Cage",
-        settings = {
-            {name = "prop_gold_cont_01", offset = {x = 0, y = 0, z = 0}, rot = {x = 0, y = 0, z = 0}}
+        objs = {
+            {
+                name = "prop_gold_cont_01",
+                ofst = v3.new(0, 0, 0),
+                rot = v3.new(0, 0, 0)
+            }
         },
-        maxDist = 2
+        max_dist = 2
     },
     [1] = {
         "Tall Cage",
-        settings = {
-            {name = "prop_rub_cage01a", offset = {x = 0, y = 0, z = -1}, rot = {x = 0, y = 0, z = 0}},
-            {name = "prop_rub_cage01a", offset = {x = 0, y = 0, z = 1.2}, rot = {x = -180, y = 0, z = 90}}
+        objs = {
+            {
+                name = "prop_rub_cage01a",
+                ofst = v3.new(0, 0, -1),
+                rot = v3.new(0, 0, 0)
+            },
+            {
+                name = "prop_rub_cage01a",
+                ofst = v3.new(0, 0, 1.2),
+                rot = v3.new(-180, 0, 90)
+            }
         },
-        maxDist = 1.5
+        max_dist = 1.5
     },
     [2] = {
         "Box Cage",
-        settings = {
-            {name = "prop_ld_crate_01", offset = {x = 0, y = 0, z = 0}, rot = {x = -180, y = 90, z = 0}},
-            {name = "prop_ld_crate_01", offset = {x = 0, y = 0, z = 0}, rot = {x = 0, y = 90, z = 0}}
+        objs = {
+            {
+                name = "prop_ld_crate_01",
+                ofst = v3.new(0, 0, 0),
+                rot = v3.new(-180, 90, 0)
+            },
+            {
+                name = "prop_ld_crate_01",
+                ofst = v3.new(0, 0, 0),
+                rot = v3.new(0, 90, 0)
+            }
         },
-        maxDist = 1.5
+        max_dist = 1.5
     },
     [3] = {
         "Pipe Cage",
-        settings = {
-            {name = "prop_pipes_conc_01", offset = {x = 0, y = 0, z = 0}, rot = {x = 90, y = 0, z = 0}}
+        objs = {
+            {
+                name = "prop_pipes_conc_01",
+                ofst = v3.new(0, 0, 0),
+                rot = v3.new(90, 0, 0)
+            }
         },
-        maxDist = 1.5
+        max_dist = 1.5
     },
     [4] = {
         "Stunt Tube Cage",
-        settings = {
-            {name = "stt_prop_stunt_tube_end", offset = {x = 0, y = 0, z = 0}, rot = {x = 0, y = -90, z = 0}}
+        objs = {
+            {
+                name = "stt_prop_stunt_tube_end",
+                ofst = v3.new(0, 0, 0),
+                rot = v3.new(0, -90, 0)
+            }
         },
-        maxDist = 13
+        max_dist = 13
     }
 }
 
-local entityTypes = {
+local entity_types = {
     --Spent 1 fucking day scrolling and spawning objects, if someone uses this, give credits pls
     [0] = {"Cone", name = "prop_mp_cone_01"},
     [1] = {"Pole", name = "prop_roadpole_01b"},
@@ -188,316 +223,178 @@ local entityTypes = {
     [41] = {"Golfball", name = "prop_golf_ball"},
     [42] = {"Big Soccerball", name = "stt_prop_stunt_soccer_ball"}
 }
- --
 
---[[
-#################################################
- ----------------Local Functions----------------
-#################################################
-]] --> World Functions <--
-local function clearWorld(clearWorldPeds, clearWorldObjects, clearWorldVehicles, clearWorldExclPersVeh)
-    local count = 0
+--#################################################
 
-    if clearWorldPeds then
-        for i, pedEntity in pairs(entities.get_all_peds_as_handles()) do
-            if not PED.IS_PED_A_PLAYER(pedEntity) then
-                entities.delete_by_handle(pedEntity)
+  ------------------| Functions |------------------
+
+--#################################################
+
+local alarm = false
+
+local function start_alarm(alarm_time)
+    local time = 0
+    alarm = false
+    util.create_tick_handler(function()
+        if time >= alarm_time then
+            alarm = true
+            return false
+        else
+            time += MISC.GET_FRAME_TIME()
+        end
+    end)
+end
+
+local function get_alarm()
+    return alarm
+end
+
+local function request_model(model)
+    STREAMING.REQUEST_MODEL(model)
+    while not STREAMING.HAS_MODEL_LOADED(model) do
+        util.yield(1)
+    end
+end
+
+local function request_ptfx_asset(asset)
+    STREAMING.REQUEST_NAMED_PTFX_ASSET(asset)
+    while not STREAMING.HAS_NAMED_PTFX_ASSET_LOADED(asset) do
+        util.yield(1)
+    end
+end
+
+local function wait_player_revive(player_id)
+    if PLAYER.IS_PLAYER_DEAD(player_id) then
+        while PLAYER.IS_PLAYER_DEAD(player_id) do
+            util.yield(100)
+        end
+    end
+end
+
+local function kick_player_out_of_veh(player_id)
+    local player_name = players.get_name(player_id)
+    local ped_id = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id)
+    local failed = false
+    if PED.IS_PED_IN_ANY_VEHICLE(ped_id, false) then
+        menu.trigger_commands("vehkick" .. player_name)
+        start_alarm(2.5)
+        while PED.IS_PED_IN_ANY_VEHICLE(ped_id, false) do
+            if get_alarm() then
+                failed = true
+                break
             end
-
-            count = count + 1
+            util.yield(10)
         end
     end
+    return failed
+end
 
-    if clearWorldObjects then
-        for i, objEntity in pairs(entities.get_all_objects_as_handles()) do
-            entities.delete_by_handle(objEntity)
+local function set_entity_toward_entity(entity, target)
+	local entity_pos = ENTITY.GET_ENTITY_COORDS(entity, false)
+	local target_pos = ENTITY.GET_ENTITY_COORDS(target, false)
+	local entity_rot = v3.toRot(v3.sub(entity_pos, target_pos))
+	ENTITY.SET_ENTITY_HEADING(entity, entity_rot.z)
+end
 
-            count = count + 1
-        end
-    end
-
-    if clearWorldVehicles then
-        for i, vehEntity in pairs(entities.get_all_vehicles_as_handles()) do
-            if clearWorldExclPersVeh then
-                if not entities.get_vehicle_has_been_owned_by_player(entities.handle_to_pointer(vehEntity)) then
-                    entities.delete_by_handle(vehEntity)
-
-                    count = count + 1
+local function get_vehs_in_range(pos, range, exclude_personal_vehs)
+    local vehs = {}
+    for i, veh in pairs(entities.get_all_vehicles_as_handles()) do
+        if exclude_personal_vehs then
+            if not entities.get_vehicle_has_been_owned_by_player(entities.handle_to_pointer(veh)) then
+                local veh_pos = ENTITY.GET_ENTITY_COORDS(veh, false)
+                local dist = v3.distance(pos, veh_pos)
+                if dist <= range then
+                    table.insert(vehs, veh)
                 end
-            else
-                entities.delete_by_handle(vehEntity)
-
-                count = count + 1
-            end
-        end
-    end
-
-    return count
-end
- --
-
---[[
-#################################################
- ---------------Players Functions---------------
-#################################################
-]] --> Trolling Functions <--
-local function setWantedLevel(playerId, wantedLevel)
-    local playerInfo =
-        memory.read_long(entities.handle_to_pointer(PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(playerId)) + 0x10C8)
-
-    while memory.read_uint(playerInfo + 0x0888) < wantedLevel do
-        for i = 1, 46, 1 do
-            PLAYER.REPORT_CRIME(playerId, i, wantedLevel)
-        end
-        util.yield(100)
-    end
-end
-
---> Explosions Functions <--
-local function addExplosion(playerId, expType, expShake, expBlamed, expAudible, expVisible, expDamage)
-    local playerX, playerY, playerZ = v3.get(players.get_position(playerId))
-    local expInvisible = not expVisible
-    local expNoDamage = not expDamage
-
-    if expBlamed then
-        FIRE.ADD_OWNED_EXPLOSION(
-            self.pedId,
-            playerX,
-            playerY,
-            playerZ,
-            expType,
-            1,
-            expAudible,
-            expInvisible,
-            expShake,
-            expNoDamage
-        )
-    else
-        FIRE.ADD_EXPLOSION(playerX, playerY, playerZ, expType, 1, expAudible, expInvisible, expShake, expNoDamage)
-    end
-end
-
---> Particles Functions <--
-local function startPtfx(playerId, ptfxIds, ptfxPower, ptfxSize, ptfxDict, ptfxName, ptfxLoop)
-    local pedId = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(playerId)
-
-    STREAMING.REQUEST_NAMED_PTFX_ASSET(ptfxDict)
-    while not STREAMING.HAS_NAMED_PTFX_ASSET_LOADED(ptfxDict) do
-        util.yield()
-    end
-
-    for i = 1, ptfxPower, 1 do
-        GRAPHICS.USE_PARTICLE_FX_ASSET(ptfxDict)
-        local ptfxId =
-            GRAPHICS.START_NETWORKED_PARTICLE_FX_LOOPED_ON_ENTITY(
-            ptfxName,
-            pedId,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            ptfxSize,
-            false,
-            false,
-            false
-        )
-        table.insert(ptfxIds, ptfxId)
-    end
-
-    while (ptfxLoop) do
-        if PLAYER.IS_PLAYER_DEAD(playerId) then
-            while (PLAYER.IS_PLAYER_DEAD(playerId)) do
-                util.yield(100)
-            end
-            for i, id in pairs(ptfxIds) do
-                GRAPHICS.STOP_PARTICLE_FX_LOOPED(id, false)
-            end
-            for i = 1, ptfxPower, 1 do
-                GRAPHICS.USE_PARTICLE_FX_ASSET(ptfxDict)
-                local ptfxId =
-                    GRAPHICS.START_NETWORKED_PARTICLE_FX_LOOPED_ON_ENTITY(
-                    ptfxName,
-                    pedId,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    ptfxSize,
-                    false,
-                    false,
-                    false
-                )
-                table.insert(ptfxIds, ptfxId)
             end
         else
-            util.yield(250)
-        end
-    end
-end
-
-local function removePtfx(ptfxIds)
-    for i, id in pairs(ptfxIds) do
-        GRAPHICS.STOP_PARTICLE_FX_LOOPED(id, false)
-    end
-end
-
---> Cages Functions <--
-local function createCage(
-    playerId,
-    cageName,
-    cageIds,
-    cageVisible,
-    cageOfstX,
-    cageOfstY,
-    cageOfstZ,
-    cageRotX,
-    cageRotY,
-    cageRotZ)
-    local pedId = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(playerId)
-    local cageHash = util.joaat(cageName)
-
-    if PED.IS_PED_IN_ANY_VEHICLE(pedId, false) then
-        menu.trigger_commands("vehkick" .. PLAYER.GET_PLAYER_NAME(playerId))
-        util.yield(250)
-
-        if PED.IS_PED_IN_ANY_VEHICLE(pedId, false) then
-            util.toast("Failed to kick the player from the vehicle. :/")
-            return
-        end
-    end
-
-    local pos = players.get_position(playerId)
-    pos.x, pos.y, pos.z = pos.x + cageOfstX, pos.y + cageOfstY, pos.z + cageOfstZ
-
-    STREAMING.REQUEST_MODEL(cageHash)
-    while not STREAMING.HAS_MODEL_LOADED(cageHash) do
-        util.yield()
-    end
-
-    local cageObject = entities.create_object(cageHash, pos)
-    table.insert(cageIds, cageObject)
-    ENTITY.SET_ENTITY_ROTATION(cageObject, cageRotX, cageRotY, cageRotZ, 1, true)
-    ENTITY.FREEZE_ENTITY_POSITION(cageObject, true)
-    ENTITY.SET_ENTITY_VISIBLE(cageObject, cageVisible, false)
-    STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(cageHash)
-end
-
-local function removeCage(cageIds)
-    for i, id in pairs(cageIds) do
-        entities.delete_by_handle(id)
-    end
-
-    for id in pairs(cageIds) do
-        cageIds[id] = nil
-    end
-end
-
-local function automaticCage(playerId, cageIds, cageTypes, cageType, cageAutomatic, cageVisible)
-    if cageAutomatic then
-        local firstPlayerPos = players.get_position(playerId)
-
-        for i, data in ipairs(cageTypes["settings"]) do
-            createCage(
-                playerId,
-                data.name,
-                cageIds,
-                cageVisible,
-                data.offset.x,
-                data.offset.y,
-                data.offset.z,
-                data.rot.x,
-                data.rot.y,
-                data.rot.z
-            )
-        end
-
-        while (cageAutomatic) do
-            local secondPlayerPos = players.get_position(playerId)
-
-            if v3.distance(firstPlayerPos, secondPlayerPos) >= cageTypes["maxDist"] then
-                firstPlayerPos = players.get_position(playerId)
-
-                removeCage(cageIds)
-
-                for i, data in ipairs(cageTypes["settings"]) do
-                    createCage(
-                        playerId,
-                        data.name,
-                        cageIds,
-                        cageVisible,
-                        data.offset.x,
-                        data.offset.y,
-                        data.offset.z,
-                        data.rot.x,
-                        data.rot.y,
-                        data.rot.z
-                    )
-                end
-                util.toast("Player re-caged successfully. :)")
+            local veh_pos = ENTITY.GET_ENTITY_COORDS(veh, false)
+            local dist = v3.distance(pos, veh_pos)
+            if dist <= range then
+                table.insert(vehs, veh)
             end
-
-            util.yield(500)
         end
-    else
-        removeCage(cageIds)
     end
+    return vehs
 end
 
---> Spam Entities Functions <--
-local function spamEntities(playerId, entityName, entitiesAmount)
-    local entityHash = util.joaat(entityName)
-    local playerPos = players.get_position(playerId)
-
-    for i = 1, entitiesAmount, 1 do
-        local entityPos =
-            v3.new(
-            playerPos.x + math.random(-1, 1) * 0.25,
-            playerPos.y + math.random(-1, 1) * 0.25,
-            playerPos.z + math.random(-1, 1) * 0.25
-        )
-        local entity =
-            OBJECT.CREATE_OBJECT_NO_OFFSET(entityHash, entityPos.x, entityPos.y, entityPos.z, true, false, false)
+local function get_peds_in_range(pos, range, exclude_player_peds)
+    local peds = {}
+    for i, ped in pairs(entities.get_all_peds_as_handles()) do
+        if exclude_player_peds then
+            if not PED.IS_PED_A_PLAYER(ped) then
+                local ped_pos = ENTITY.GET_ENTITY_COORDS(ped, false)
+                local dist = v3.distance(pos, ped_pos)
+                if dist <= range then
+                    table.insert(peds, ped)
+                end
+            end
+        else
+            local ped_pos = ENTITY.GET_ENTITY_COORDS(ped, false)
+            local dist = v3.distance(pos, ped_pos)
+            if dist <= range then
+                table.insert(peds, ped)
+            end
+        end
     end
-
-    FIRE.ADD_EXPLOSION(playerPos.x, playerPos.y, playerPos.z, 18, 1, false, true, 0, true)
+    return peds
 end
 
---> Script Start <--
-util.toast("Welcome to SmileScript. Hope you'll enjoy! :)")
- --
+local function get_objs_in_range(pos, range)
+    local objs = {}
+    for i, obj in pairs(entities.get_all_objects_as_handles()) do
+        local obj_pos = ENTITY.GET_ENTITY_COORDS(obj, false)
+        local dist = v3.distance(pos, obj_pos)
+        if dist <= range then
+            table.insert(objs, obj)
+        end
+    end
+    return objs
+end
 
---[[
-#################################################
- ------------Local Features Generator------------
-#################################################
-]]
-local selfLocalRoot = menu.list(menu.my_root(), "Self")
-menu.divider(selfLocalRoot, "Self")
-local worldLocalRoot = menu.list(menu.my_root(), "World")
-menu.divider(worldLocalRoot, "World")
+local function get_pickups_in_range(pos, range)
+    local pickups = {}
+    for i, pickup in pairs(entities.get_all_objects_as_handles()) do
+        local pickup_pos = ENTITY.GET_ENTITY_COORDS(pickup, false)
+        local dist = v3.distance(pos, pickup_pos)
+        if dist <= range then
+            table.insert(pickups, pickup)
+        end
+    end
+    return pickups
+end
 
---> Self Buttons <--
-local selfWeaponsLocalRoot = menu.list(selfLocalRoot, "Weapons")
-menu.divider(selfWeaponsLocalRoot, "Weapons")
+--########################################################
+
+  --------------| Local Features Generator |--------------
+
+--########################################################
+
+local self_local_root = menu.list(menu.my_root(), "Self")
+menu.divider(self_local_root, "Self")
+local world_local_root = menu.list(menu.my_root(), "World")
+menu.divider(world_local_root, "World")
+
+------------------------------
+-- Self Menu
+------------------------------
+
+local wpns_local_root = menu.list(self_local_root, "Weapons")
+menu.divider(wpns_local_root, "Weapons")
 
 menu.toggle(
-    selfWeaponsLocalRoot,
+    wpns_local_root,
     "Autoload Weapons",
     {"autoloadweapons"},
     "Autoload all the weapons everytime you join a new session.",
-    function(toggle)
-        if toggle then
+    function(state)
+        if state then
             players.on_join(
-                function(playerId)
-                    if playerId == self.playerId then
-                        while (util.is_session_transition_active() == true) do
+                function(player_id)
+                    if player_id == my_player_id then
+                        while util.is_session_transition_active() do
                             util.yield(250)
                         end
-
                         menu.trigger_commands("allweapons")
                         util.toast("Weapons loaded successfully. :)")
                     end
@@ -507,474 +404,709 @@ menu.toggle(
     end
 )
 
---> World Buttons <--
-local worldClearWorldLocalRoot = menu.list(worldLocalRoot, "Clear World")
+------------------------------
+-- World Menu
+------------------------------
+
+local clear_world_local_root = menu.list(world_local_root, "Clear World")
+menu.divider(clear_world_local_root, "Clear World")
 
 menu.action(
-    worldClearWorldLocalRoot,
+    clear_world_local_root,
     "Clear World",
     {"clearworld"},
-    "Deletes the selected in the world.",
+    "",
     function()
-        local count =
-            clearWorld(
-            localSettings.clearWorldPeds,
-            localSettings.clearWorldObjects,
-            localSettings.clearWorldVehicles,
-            localSettings.clearWorldExclPersVeh
-        )
-
+        local count = 0
+        if local_settings.clear_world_vehs then
+            local pos = v3.new(0, 0, 0)
+            local exclude_personal_vehs = local_settings.clear_world_exclude_personal_vehs
+            local vehs = get_vehs_in_range(pos, 16000, exclude_personal_vehs)
+            for i, veh in pairs(vehs) do
+                entities.delete_by_handle(veh)
+                count += 1
+            end
+        end
+        if local_settings.clear_world_peds then
+            local pos = v3.new(0, 0, 0)
+            local peds = get_peds_in_range(pos, 16000, true)
+            for i, ped in pairs(peds) do
+                entities.delete_by_handle(ped)
+                count += 1
+            end
+        end
+        if local_settings.clear_world_objs then
+            local pos = v3.new(0, 0, 0)
+            local objs = get_objs_in_range(pos, 16000)
+            for i, obj in pairs(objs) do
+                entities.delete_by_handle(obj)
+                count += 1
+            end
+        end
+        if local_settings.clear_world_pickups then
+            local pos = v3.new(0, 0, 0)
+            local pickups = get_pickups_in_range(pos, 16000)
+            for i, pickup in pairs(pickups) do
+                entities.delete_by_handle(pickup)
+                count += 1
+            end
+        end
         util.toast("World cleaned successfully, " .. count .. " entities removed. :)")
     end
 )
 
 menu.toggle(
-    worldClearWorldLocalRoot,
+    clear_world_local_root,
+    "Clear Vehicles",
+    {"clearvehicles"},
+    "",
+    function(state)
+        local_settings.clear_world_vehs = state
+    end,
+    true
+)
+
+menu.toggle(
+    clear_world_local_root,
     "Clear Peds",
     {"clearpeds"},
-    "Toggle clear peds for clear world.",
-    function(toggle)
-        localSettings.clearWorldPeds = toggle
+    "",
+    function(state)
+        local_settings.clear_world_peds = state
     end,
     true
 )
 
 menu.toggle(
-    worldClearWorldLocalRoot,
+    clear_world_local_root,
     "Clear Objects",
     {"clearobjects"},
-    "Toggle clear objects for clear world.",
-    function(toggle)
-        localSettings.clearWorldObjects = toggle
+    "",
+    function(state)
+        local_settings.clear_world_objs = state
     end,
     true
 )
 
 menu.toggle(
-    worldClearWorldLocalRoot,
-    "Clear Vehicles",
-    {"clearpeds"},
-    "Toggle clear vehicles for clear world.",
-    function(toggle)
-        localSettings.clearWorldVehicles = toggle
+    clear_world_local_root,
+    "Clear Pickups",
+    {"clearpickups"},
+    "",
+    function(state)
+        local_settings.clear_world_pickups = state
     end,
     true
 )
 
 menu.toggle(
-    worldClearWorldLocalRoot,
-    "Exclude Personal Vehicles",
-    {"excludepersonalvehicles", "exclpersveh"},
-    "Toggle exclude personal vehicles for clear world.",
-    function(toggle)
-        localSettings.clearWorldExclPersVeh = toggle
-    end
+    clear_world_local_root,
+    "Ignore Personal Vehicles",
+    {"clearnopersonalvehicles"},
+    "",
+    function(state)
+        local_settings.clear_world_ignore_personal_vehs = state
+    end,
+    true
 )
- --
 
---[[
-#################################################
- -----------Player Features Generator-----------
-#################################################
-]]
+--########################################################
+
+  -------------| Players Features Generator |-------------
+
+--########################################################
+
 players.on_join(
-    function(playerId)
-        local pedId = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(playerId)
-        playerSettings[playerId] = {
-            wantedLevel = 0,
-            explosionDelay = 100,
-            explosionType = 0,
-            explosionShake = 1,
-            explosionBlamed = false,
-            explosionAudible = true,
-            explosionVisible = true,
-            explosionDamage = true,
-            ptfxIds = {},
-            ptfxPower = 1,
-            ptfxSize = 1,
-            ptfxDict = "core",
-            ptfxName = "exp_grd_grenade_smoke",
-            ptfxLoop = false,
-            cageIds = {},
-            cageType = 0,
-            cageAutomatic = false,
-            cageVisible = true,
-            entityType = 0,
-            entityAmount = 1
+    function(player_id)
+        local ped_id = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id)
+        player_settings[player_id] = {
+            wanted_level = 0,
+            exp_type = 0,
+            exp_delay = 100,
+            exp_shake = 1,
+            exp_blamed = false,
+            exp_audible = true,
+            exp_visible = true,
+            exp_damage = true,
+            ptfx_ids = {},
+            ptfx_power = 1,
+            ptfx_size = 5,
+            ptfx_asset = "core",
+            ptfx_name = "exp_grd_grenade_smoke",
+            cage_ids = {},
+            cage_failed = false,
+            cage_automatic = false,
+            cage_type = 0,
+            cage_visible = true,
+            entity_type = 0,
+            entity_amount = 1
         }
 
-        menu.divider(menu.player_root(playerId), "SmileScript")
+        menu.divider(menu.player_root(player_id), "SmileScript")
+        local trolling_players_root = menu.list(menu.player_root(player_id), "Trolling")
+        menu.divider(trolling_players_root, "Trolling")
 
-        --> Player Root Variables <--
-        local trollingRoot = menu.list(menu.player_root(playerId), "Trolling")
-        menu.divider(trollingRoot, "Trolling")
-        local explosionsRoot = menu.list(trollingRoot, "Explosions")
-        menu.divider(explosionsRoot, "Explosions")
-        local particlesRoot = menu.list(trollingRoot, "Particles")
-        menu.divider(particlesRoot, "Particles")
-        local spamEntitiesRoot = menu.list(trollingRoot, "Entities")
-        menu.divider(spamEntitiesRoot, "Entities")
-        local cagesRoot = menu.list(trollingRoot, "Cages")
-        menu.divider(cagesRoot, "Cages")
+        ------------------------------
+        -- Trolling Menu
+        ------------------------------
 
-        --> Trolling Buttons <--
+        local explosions_players_root = menu.list(trolling_players_root, "Explosions")
+        menu.divider(explosions_players_root, "Explosions")
+        local particles_players_root = menu.list(trolling_players_root, "Particles")
+        menu.divider(particles_players_root, "Particles")
+        local entities_players_root = menu.list(trolling_players_root, "Entities")
+        menu.divider(entities_players_root, "Entities")
+        local cages_players_root = menu.list(trolling_players_root, "Cages")
+        menu.divider(cages_players_root, "Cages")
+
         menu.click_slider(
-            trollingRoot,
+            trolling_players_root,
             "Increase Wanted Level",
             {"wantedlevel"},
-            "Increase wanted level.",
+            "It may take a few seconds.",
             1,
             5,
-            5,
             1,
-            function(change)
-                setWantedLevel(playerId, change)
-                util.toast("Wanted level increased successfully. :)")
+            1,
+            function(value)
+                local player_info = memory.read_long(entities.handle_to_pointer(ped_id) + 0x10C8)
+                if memory.read_uint(player_info + 0x0888) < value then
+                    local failed = false
+                    start_alarm(10)
+                    while memory.read_uint(player_info + 0x0888) < value do
+                        if get_alarm() then
+                            failed = true
+                            break
+                        end
+                        for i = 1, 46 do
+                            PLAYER.REPORT_CRIME(player_id, i, value)
+                        end
+                        util.yield(50)
+                    end
+                    if failed then
+                        util.toast("Failed to increase Wanted Level. :/")
+                    else
+                        util.toast("Wanted Level increased successfully. :)")
+                    end
+                else
+                    util.toast("Wanted Level is already " .. memory.read_uint(player_info + 0x0888) .. ".")
+                end
             end
         )
 
-        --> Explosions Buttons <--
+        ------------------------------
+        -- Explosions Menu
+        ------------------------------
+
         menu.action(
-            explosionsRoot,
-            "Explode Player",
-            {"customexplode", "custexp"},
-            "Explode the player.",
+            explosions_players_root,
+            "Explode",
+            {"ssexplode"},
+            "",
             function()
-                addExplosion(
-                    playerId,
-                    playerSettings[playerId].explosionType,
-                    playerSettings[playerId].explosionShake,
-                    playerSettings[playerId].explosionBlamed,
-                    playerSettings[playerId].explosionAudible,
-                    playerSettings[playerId].explosionVisible,
-                    playerSettings[playerId].explosionDamage
-                )
+                local player_pos = players.get_position(player_id)
+                if player_settings.exp_blamed then
+                    FIRE.ADD_OWNED_EXPLOSION(
+                        my_ped_id,
+                        player_pos.x,
+                        player_pos.y,
+                        player_pos.z,
+                        player_settings[player_id].exp_type,
+                        1,
+                        player_settings[player_id].exp_audible,
+                        not player_settings[player_id].exp_visible,
+                        player_settings[player_id].exp_shake
+                    )
+                else
+                    FIRE.ADD_EXPLOSION(
+                        player_pos.x,
+                        player_pos.y,
+                        player_pos.z,
+                        player_settings[player_id].exp_type,
+                        1,
+                        player_settings[player_id].exp_audible,
+                        not player_settings[player_id].exp_visible,
+                        player_settings[player_id].exp_shake,
+                        not player_settings[player_id].exp_damage
+                    )
+                end
             end
         )
 
         menu.toggle_loop(
-            explosionsRoot,
-            "Explode Loop Player",
-            {"explodeloop", "exploop"},
-            "Explode Loop the player.",
+            explosions_players_root,
+            "Explode Loop",
+            {"explodeloop"},
+            "",
             function()
-                addExplosion(
-                    playerId,
-                    playerSettings[playerId].explosionType,
-                    playerSettings[playerId].explosionShake,
-                    playerSettings[playerId].explosionBlamed,
-                    playerSettings[playerId].explosionAudible,
-                    playerSettings[playerId].explosionVisible,
-                    playerSettings[playerId].explosionDamage
-                )
+                local player_pos = players.get_position(player_id)
+                if player_settings.exp_blamed then
+                    FIRE.ADD_OWNED_EXPLOSION(
+                        my_ped_id,
+                        player_pos.x,
+                        player_pos.y,
+                        player_pos.z,
+                        player_settings[player_id].exp_type,
+                        1,
+                        player_settings[player_id].exp_audible,
+                        not player_settings[player_id].exp_visible,
+                        player_settings[player_id].exp_shake
+                    )
+                else
+                    FIRE.ADD_EXPLOSION(
+                        player_pos.x,
+                        player_pos.y,
+                        player_pos.z,
+                        player_settings[player_id].exp_type,
+                        1,
+                        player_settings[player_id].exp_audible,
+                        not player_settings[player_id].exp_visible,
+                        player_settings[player_id].exp_shake,
+                        not player_settings[player_id].exp_damage
+                    )
+                end
 
-                util.yield(playerSettings[playerId].explosionDelay)
+                util.yield(player_settings[player_id].exp_delay)
             end
         )
 
         menu.list_select(
-            explosionsRoot,
+            explosions_players_root,
             "Explosion Type",
-            {"explosiontype", "exptype"},
-            "Change Explosion type.",
-            explosionTypes,
+            {"explosiontype"},
+            "",
+            exp_types,
             0,
-            function(change)
-                playerSettings[playerId].explosionType = change
+            function(value)
+                player_settings[player_id].exp_type = value
             end
         )
 
-        local explosionsSettingsRoot =
-            menu.list(
-            explosionsRoot,
-            "Advanced Settings",
-            {},
-            "",
-            function()
-            end
-        )
+        local explosion_other_players_root = menu.list(explosions_players_root, "Other Settings")
+        menu.divider(explosion_other_players_root, "Other Settings")
 
         menu.slider(
-            explosionsSettingsRoot,
+            explosion_other_players_root,
             "Explosion Delay",
-            {"explosiondelay", "expdelay"},
-            "Change Explosion delay.",
+            {"explosiondelay"},
+            "",
             50,
             1000,
-            100,
+            250,
             10,
-            function(change)
-                playerSettings[playerId].explosionDelay = change
+            function(value)
+                player_settings[player_id].exp_delay = value
             end
         )
 
         menu.slider(
-            explosionsSettingsRoot,
+            explosion_other_players_root,
             "Explosion Shake",
-            {"explosionshake", "expshake"},
-            "Change Shake strength.",
+            {"explosionshake"},
+            "",
             0,
             100,
             1,
             1,
-            function(change)
-                playerSettings[playerId].explosionShake = change
+            function(value)
+                player_settings[player_id].exp_shake = value
             end
         )
 
         menu.toggle(
-            explosionsSettingsRoot,
+            explosion_other_players_root,
             "Explosion Blamed",
-            {"explosionaudible", "expaudible"},
-            "Blames you for the explosion.",
-            function(toggle)
-                playerSettings[playerId].explosionBlamed = toggle
+            {"explosionblamed"},
+            "",
+            function(state)
+                player_settings[player_id].exp_blamed = state
             end
         )
 
         menu.toggle(
-            explosionsSettingsRoot,
+            explosion_other_players_root,
             "Explosion Audible",
-            {"explosionblamed", "expblamed"},
-            "Toggle explosion audibility.",
-            function(toggle)
-                playerSettings[playerId].explosionAudible = toggle
+            {"explosionaudible"},
+            "",
+            function(state)
+                player_settings[player_id].exp_audible = state
             end,
             true
         )
 
         menu.toggle(
-            explosionsSettingsRoot,
+            explosion_other_players_root,
             "Explosion Visible",
-            {"explosionvisible", "expvisible"},
-            "Toggle explosion visibility.",
-            function(toggle)
-                playerSettings[playerId].explosionVisible = toggle
+            {"explosionvisible"},
+            "",
+            function(state)
+                player_settings[player_id].exp_visible = state
             end,
             true
         )
 
         menu.toggle(
-            explosionsSettingsRoot,
+            explosion_other_players_root,
             "Explosion Damage",
-            {"explosiondamage", "expdamage"},
-            "Toggle explosion damage.",
-            function(toggle)
-                playerSettings[playerId].explosionDamage = toggle
+            {"explosiondamage"},
+            "If Explosion Blamed is on, turning this off won't have any effect.",
+            function(state)
+                player_settings[player_id].exp_damage = state
             end,
             true
         )
 
-        --> Particles Buttons <--
-        menu.toggle(
-            particlesRoot,
-            "Spawn PTFX",
-            {"ptfx"},
-            "Spawn a looped PTFX on the player.",
-            function(toggle)
-                playerSettings[playerId].ptfxLoop = toggle
+        ------------------------------
+        -- Particles Menu
+        ------------------------------
 
-                if toggle then
-                    startPtfx(
-                        playerId,
-                        playerSettings[playerId].ptfxIds,
-                        playerSettings[playerId].ptfxPower,
-                        playerSettings[playerId].ptfxSize,
-                        playerSettings[playerId].ptfxDict,
-                        playerSettings[playerId].ptfxName,
-                        playerSettings[playerId].ptfxLoop
-                    )
+        menu.toggle(
+            particles_players_root,
+            "Start PTFX",
+            {"ptfx"},
+            "",
+            function(state)
+                if state then
+                    request_ptfx_asset(player_settings[player_id].ptfx_asset)
+                    for i = 1, player_settings[player_id].ptfx_power, 1 do
+                        GRAPHICS.USE_PARTICLE_FX_ASSET(player_settings[player_id].ptfx_asset)
+                        table.insert(
+                            player_settings[player_id].ptfx_ids,
+                            GRAPHICS.START_NETWORKED_PARTICLE_FX_LOOPED_ON_ENTITY(
+                                player_settings[player_id].ptfx_name,
+                                ped_id,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                player_settings[player_id].ptfx_size,
+                                false,
+                                false,
+                                false
+                            )
+                        )
+                    end
+                    util.toast("PTFX started successfully. :)")
+                    while state do
+                        if PLAYER.IS_PLAYER_DEAD(player_settings[player_id].ptfx_power) then
+                            wait_player_revive(player_id)
+                            for i, ptfx_id in pairs(player_settings[player_id].ptfx_ids) do
+                                GRAPHICS.STOP_PARTICLE_FX_LOOPED(ptfx_id, false)
+                            end
+                            for i = 1, player_settings[player_id].ptfx_power, 1 do
+                                GRAPHICS.USE_PARTICLE_FX_ASSET(player_settings[player_id].ptfx_asset)
+                                table.insert(
+                                    player_settings[player_id].ptfx_ids,
+                                    GRAPHICS.START_NETWORKED_PARTICLE_FX_LOOPED_ON_ENTITY(
+                                        player_settings[player_id].ptfx_name,
+                                        ped_id,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        0,
+                                        player_settings[player_id].ptfx_size,
+                                        false,
+                                        false,
+                                        false
+                                    )
+                                )
+                            end
+                        else
+                            util.yield(250)
+                        end
+                    end
                 else
-                    removePtfx(playerSettings[playerId].ptfxIds)
+                    for i, ptfx_id in pairs(player_settings[player_id].ptfx_ids) do
+                        GRAPHICS.STOP_PARTICLE_FX_LOOPED(ptfx_id, false)
+                    end
+                    util.toast("PTFX stopped successfully. :)")
                 end
             end
         )
 
         menu.slider(
-            particlesRoot,
+            particles_players_root,
             "PTFX Amount",
             {"ptfxamount"},
-            "Change PTFX amount.",
+            "",
             1,
             250,
             1,
             1,
-            function(change)
-                playerSettings[playerId].ptfxPower = change
+            function(value)
+                player_settings[player_id].ptfx_power = value
             end
         )
 
         menu.slider(
-            particlesRoot,
+            particles_players_root,
             "PTFX Size",
             {"ptfxsize"},
-            "Change PTFX size.",
+            "",
             1,
             10,
             5,
             1,
-            function(change)
-                playerSettings[playerId].ptfxSize = change
+            function(value)
+                player_settings[player_id].ptfx_size = value
             end
         )
 
-        local particlesSettingsRoot =
-            menu.list(
-            particlesRoot,
-            "Advanced Settings",
-            {},
-            "",
-            function()
-            end
-        )
+        local particles_other_player_root = menu.list(particles_players_root, "Other Settings")
+        menu.divider(particles_other_player_root, "Other Settings")
 
         menu.text_input(
-            particlesSettingsRoot,
-            "PTFX Dictionary",
-            {"ptfxdictionary"},
-            "Select PTFX dictionary.",
-            function(change)
-                playerSettings[playerId].ptfxDict = change
+            particles_other_player_root,
+            "PTFX Asset",
+            {"ptfxasset"},
+            "",
+            function(value)
+                player_settings[player_id].ptfx_asset = value
             end,
             "core"
         )
 
         menu.text_input(
-            particlesSettingsRoot,
+            particles_other_player_root,
             "PTFX Name",
             {"ptfxname"},
-            "Select PTFX name.",
-            function(change)
-                playerSettings[playerId].ptfxName = change
+            "",
+            function(value)
+                player_settings[player_id].ptfx_name = value
             end,
             "exp_grd_grenade_smoke"
         )
 
         menu.hyperlink(
-            particlesSettingsRoot,
+            particles_other_player_root,
             "PTFX List",
             "https://github.com/DurtyFree/gta-v-data-dumps/blob/master/particleEffectsCompact.json#L270",
-            "List of all GTAV PTFX and Dictionaries."
+            "List of all PTFX and assets."
         )
 
-        --> Cages Buttons <--
+        ------------------------------
+        -- Cages Menu
+        ------------------------------
+
         menu.toggle(
-            cagesRoot,
+            cages_players_root,
             "Cage",
             {"cage"},
-            "Cage the player.",
-            function(toggle)
-                if toggle then
-                    for i, data in ipairs(cageTypes[playerSettings[playerId].cageType]["settings"]) do
-                        createCage(
-                            playerId,
-                            data.name,
-                            playerSettings[playerId].cageIds,
-                            playerSettings[playerId].cageVisible,
-                            data.offset.x,
-                            data.offset.y,
-                            data.offset.z,
-                            data.rot.x,
-                            data.rot.y,
-                            data.rot.z
-                        )
+            "",
+            function(state)
+                if state then
+                    player_settings[player_id].cage_failed = false
+                    for i, cage_object in ipairs(cage_types[player_settings[player_id].cage_type].objs) do
+                        local cage_hash = util.joaat(cage_object.name)
+                        request_model(cage_hash)
+                        if kick_player_out_of_veh(player_id) then
+                            player_settings[player_id].cage_failed = true
+                            break
+                        end
+                        local entity_pos = players.get_position(player_id)
+                        v3.add(entity_pos, cage_object.ofst)
+                        local cage_obj = entities.create_object(cage_hash, entity_pos)
+                        table.insert(player_settings[player_id].cage_ids, cage_obj)
+                        ENTITY.SET_ENTITY_ROTATION(cage_obj, cage_object.rot.x, cage_object.rot.y, cage_object.rot.z, 1, true)
+                        ENTITY.FREEZE_ENTITY_POSITION(cage_obj, true)
+                        ENTITY.SET_ENTITY_VISIBLE(cage_obj, cage_obj, false)
+                        STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(cage_hash)
+                    end
+                    if player_settings[player_id].cage_failed then
+                        util.toast("Failed to cage the player. :/")
+                        return
+                    else
+                        util.toast("Player caged successfully. :)")
                     end
                 else
-                    removeCage(playerSettings[playerId].cageIds)
+                    if not player_settings[player_id].cage_failed then
+                        for i, cage_id in pairs(player_settings[player_id].cage_ids) do
+                            entities.delete_by_handle(cage_id)
+                        end
+
+                        for cage_id in pairs(player_settings[player_id].cage_ids) do
+                            player_settings[player_id].cage_ids[cage_id] = nil
+                        end
+                        util.toast("Player uncaged successfully. :)")
+                    end
                 end
             end
         )
 
         menu.toggle(
-            cagesRoot,
+            cages_players_root,
             "Automatic Cage",
-            {"automaticcage", "autocage"},
-            "Automatically cage the player if he leave the cage.",
-            function(toggle)
-                playerSettings[playerId].cageAutomatic = toggle
-
-                automaticCage(
-                    playerId,
-                    playerSettings[playerId].cageIds,
-                    playerSettings[playerId].cageTypes,
-                    playerSettings[playerId].cageType,
-                    playerSettings[playerId].cageAutomatic,
-                    playerSettings[playerId].cageVisible
-                )
+            {"automaticcage"},
+            "Automatically re-cage the player if he leaves the cage.",
+            function(state)
+                player_settings[player_id].cage_automatic = state
+                if state then
+                    local first_player_pos
+                    player_settings[player_id].cage_failed = false
+                    for i, cage_object in ipairs(cage_types[player_settings[player_id].cage_type].objs) do
+                        local cage_hash = util.joaat(cage_object.name)
+                        request_model(cage_hash)
+                        if kick_player_out_of_veh(player_id) then
+                            player_settings[player_id].cage_failed = true
+                            break
+                        end
+                        first_player_pos = players.get_position(player_id)
+                        local entity_pos = players.get_position(player_id)
+                        v3.add(entity_pos, cage_object.ofst)
+                        local cage_obj = entities.create_object(cage_hash, entity_pos)
+                        table.insert(player_settings[player_id].cage_ids, cage_obj)
+                        ENTITY.SET_ENTITY_ROTATION(cage_obj, cage_object.rot.x, cage_object.rot.y, cage_object.rot.z, 1, true)
+                        ENTITY.FREEZE_ENTITY_POSITION(cage_obj, true)
+                        ENTITY.SET_ENTITY_VISIBLE(cage_obj, cage_obj, false)
+                        STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(cage_hash)
+                    end
+                    if player_settings[player_id].cage_failed then
+                        util.toast("Failed to cage the player. :/")
+                        return
+                    else
+                        util.toast("Player caged successfully. :)")
+                    end
+                    while player_settings[player_id].cage_automatic do
+                        local second_player_pos = players.get_position(player_id)
+                        if v3.distance(first_player_pos, second_player_pos) >= cage_types[player_settings[player_id].cage_type].max_dist then
+                            first_player_pos = players.get_position(player_id)
+                            for i, cage_id in pairs(player_settings[player_id].cage_ids) do
+                                entities.delete_by_handle(cage_id)
+                            end
+                            for cage_id in pairs(player_settings[player_id].cage_ids) do
+                                player_settings[player_id].cage_ids[cage_id] = nil
+                            end
+                            for i, cage_object in ipairs(cage_types[player_settings[player_id].cage_type].objs) do
+                                local cage_hash = util.joaat(cage_object.name)
+                                request_model(cage_hash)
+                                if kick_player_out_of_veh(player_id) then
+                                    player_settings[player_id].cage_failed = true
+                                    break
+                                end
+                                first_player_pos = players.get_position(player_id)
+                                local entity_pos = players.get_position(player_id)
+                                v3.add(entity_pos, cage_object.ofst)
+                                local cage_obj = entities.create_object(cage_hash, entity_pos)
+                                table.insert(player_settings[player_id].cage_ids, cage_obj)
+                                ENTITY.SET_ENTITY_ROTATION(cage_obj, cage_object.rot.x, cage_object.rot.y, cage_object.rot.z, 1, true)
+                                ENTITY.FREEZE_ENTITY_POSITION(cage_obj, true)
+                                ENTITY.SET_ENTITY_VISIBLE(cage_obj, cage_obj, false)
+                                STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(cage_hash)
+                            end
+                            if player_settings[player_id].cage_failed then
+                                util.toast("Failed to re-cage the player. :/")
+                                return
+                            else
+                                util.toast("Player re-caged successfully. :)")
+                            end
+                        end
+                        util.yield(250)
+                    end
+                else
+                    if not player_settings[player_id].cage_failed then
+                        for i, cage_id in pairs(player_settings[player_id].cage_ids) do
+                            entities.delete_by_handle(cage_id)
+                        end
+                        for cage_id in pairs(player_settings[player_id].cage_ids) do
+                            player_settings[player_id].cage_ids[cage_id] = nil
+                        end
+                        util.toast("Player uncaged successfully. :)")
+                    end
+                end
             end
         )
 
         menu.list_select(
-            cagesRoot,
+            cages_players_root,
             "Cage Type",
             {"cagetype"},
-            "Change cage type.",
-            cageTypes,
+            "",
+            cage_types,
             0,
-            function(change)
-                playerSettings[playerId].cageType = change
+            function(value)
+                player_settings[player_id].cage_type = value
             end
         )
 
         menu.toggle(
-            cagesRoot,
+            cages_players_root,
             "Cage Visible",
             {"cagevisible"},
-            "Toggle cage visibility.",
-            function(toggle)
-                playerSettings[playerId].cageVisible = toggle
+            "",
+            function(state)
+                player_settings[player_id].cage_visible = state
             end,
             true
         )
 
-        --> Spam Entities Buttons <--
+        ------------------------------
+        -- Entities Menu
+        ------------------------------
+
         menu.action(
-            spamEntitiesRoot,
+            entities_players_root,
             "Spawn Entities",
             {"spamentities"},
-            "Spam entities on the player.",
+            "",
             function()
-                spamEntities(
-                    playerId,
-                    entityTypes[playerSettings[playerId].entityType]["name"],
-                    playerSettings[playerId].entityAmount
+                local entity_hash = util.joaat(entity_types[player_settings[player_id].entity_type].name)
+                local player_pos = players.get_position(player_id)
+                for i = 1, player_settings[player_id].entity_amount, 1 do
+                    local random_ofst = v3.new(math.random(-1, 1) * 0.25, math.random(-1, 1) * 0.25, math.random(-1, 1) * 0.25)
+                    local entity_pos = player_pos
+                    v3.add(entity_pos, random_ofst)
+                    OBJECT.CREATE_OBJECT_NO_OFFSET(entity_hash, entity_pos.x, entity_pos.y, entity_pos.z, true, false, false)
+                end
+                FIRE.ADD_EXPLOSION(
+                    player_pos.x,
+                    player_pos.y,
+                    player_pos.z,
+                    18,
+                    1,
+                    false,
+                    true,
+                    0,
+                    true
                 )
                 util.toast("Entities spawned successfully. :)")
             end
         )
 
         menu.slider(
-            spamEntitiesRoot,
+            entities_players_root,
             "Entity Amount",
             {"entitiesamount"},
-            "Change entities amount.",
+            "",
             1,
             50,
             1,
             1,
-            function(change)
-                playerSettings[playerId].entityAmount = change
+            function(value)
+                player_settings[player_id].entity_amount = value
             end
         )
 
         menu.list_select(
-            spamEntitiesRoot,
+            entities_players_root,
             "Entity Type",
             {"entitytype"},
-            "Change entity type.",
-            entityTypes,
+            "",
+            entity_types,
             0,
-            function(change)
-                playerSettings[playerId].entityType = change
+            function(value)
+                player_settings[player_id].entity_type = value
             end
         )
     end
 )
 
 players.on_leave(
-    function(playerId)
-        playerSettings[playerId].cageIds = nil
-        playerSettings[playerId].cageType = nil
+    function(player_id)
+        player_settings[player_id] = nil
     end
 )
 
