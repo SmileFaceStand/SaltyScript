@@ -1,7 +1,7 @@
 ![SmileScript](https://user-images.githubusercontent.com/109024520/178143925-dd817165-189d-4879-8af3-a154b58e111f.png)
 
 # SmileScript
-SmileScript is my main script, developed for Stand, using the Stand API.
+SmileScript is my main script, developed for Stand, using the Stand API. To join the Discord press [here](https://discord.gg/rejQB9jHQf).
 
 ## Is it already completed?
 No, it isn't, not even nearly, now I’m introducing basic features that any script has, when it reaches version 1.0, it will mean that all the features I had thought of have been introduced. But this will not mean that it will stop having other functions added.
@@ -10,7 +10,10 @@ No, it isn't, not even nearly, now I’m introducing basic features that any scr
 The first updates will be released very often, probably 1 update every 2 days, but then the updates will probably slow down.
 
 ## Where do i report a problem?
-Describe the problem [here](https://github.com/SmileFaceStand/SmileScript/issues/new), and i'll answer as soon as possible.
+Describe the problem on [Issues](https://github.com/SmileFaceStand/SmileScript/issues/new) or on [SmileScript Discord](https://discord.gg/rejQB9jHQf) and i'll answer as soon as possible.
+
+## How can i suggest a feature?
+Describe the feature on [SmileScript Discord](https://discord.gg/rejQB9jHQf) and I will evaluate it as soon as possible.
 
 ## What can it do?
 - **Explosions**: Can Explode or Explode Loop a player, with a lot of customization (Explosion Type, Explosion Delay, Explosion Shake, Explosion Blamed, Explosion Audible, Explosion Visible, Explosion Damage).
