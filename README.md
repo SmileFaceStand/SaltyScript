@@ -10,7 +10,7 @@ No, it isn't, not even nearly, now I’m introducing basic features that any scr
 The first updates will be released very often, probably 1 update every 2 days, but then the updates will probably slow down.
 
 ## Where do i report a problem?
-Describe the problem [here](https://github.com/SmileFaceStand/SmileScript/issues/new), and i'll soon as soon as possible.
+Describe the problem [here](https://github.com/SmileFaceStand/SmileScript/issues/new), and i'll answer as soon as possible.
 
 ## Installation
 - [Download](https://github.com/SmileFaceStand/SmileScript/releases/latest) the required file
