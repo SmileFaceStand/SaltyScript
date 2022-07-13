@@ -1,14 +1,17 @@
 Changelog
 
 Adjustments
-- Added some notifications
-- Added some functions
-- Moved functions of commands in the command itself
-- Re-named some commands
-- Re-named functions (Now using snake case)
-- Re-named variables (Now using snake case)
-- Removed redundant help text
+    - Now if some commands fail, they don't get stuck in a loop
+    - Added missing dividers
+    - Added some notifications
+    - Added some functions
+    - Moved functions of commands in the command itself
+    - Re-named some commands
+    - Re-named functions (Now using snake case)
+    - Re-named variables (Now using snake case)
+    - Removed redundant help text
 
 Fixes
-- Major code improvement
-- Major code
+    - Major code improvement
+    - Major code cleanup
+    - Some other improvements and bug fixes
