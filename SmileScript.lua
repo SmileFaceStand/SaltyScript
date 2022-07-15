@@ -2,9 +2,9 @@
 Script created by (=#1000
 
 Credits:
+Lua Retards and Lua Masters for helping me
+Nullity for helping a lot with the Forcefield
 Nowiry for the Tall Cage
-Lua Retards for helping me
-Lua Masters for helping me
 ]]
 util.require_natives(1651208000)
 util.keep_running()
@@ -26,10 +26,7 @@ local local_settings = {
     forcefield_type = 0,
     forcefield_ign_vehs = false,
     forcefield_ign_peds = false,
-    forcefield_ign_objs = false,
-    forcefield_ign_pickups = true,
     forcefield_ign_personal_vehs = true,
-    forcefield_ign_players = true,
     clr_world_vehs = true,
     clr_world_peds = true,
     clr_world_objs = true,
@@ -287,7 +284,7 @@ local function request_ptfx_asset(asset)
 end
 
 local function wait_session_transition()
-    while not util.is_session_transition_active() do
+    while util.is_session_transition_active() do
         util.yield(250)
     end
 end
@@ -322,17 +319,17 @@ local function set_ent_toward_ent(ent, tgt)
 	ENTITY.SET_ENTITY_HEADING(ent, ent_rot.z)
 end
 
-local function get_vehs_in_range(pos, range, exclude_personal_vehs)
+local function get_vehs_in_range_by_pointer(pos, range, exclude_personal_vehs)
     local vehs = {}
-    for i, veh in pairs(entities.get_all_vehicles_as_handles()) do
+    for i, veh in pairs(entities.get_all_vehicles_as_pointers()) do
         if exclude_personal_vehs then
-            if not entities.get_vehicle_has_been_owned_by_player(entities.handle_to_pointer(veh)) then
-                if v3.distance(pos, ENTITY.GET_ENTITY_COORDS(veh, false)) <= range then
+            if not entities.get_vehicle_has_been_owned_by_player(veh) then
+                if v3.distance(pos, entities.get_position(veh)) <= range then
                     table.insert(vehs, veh)
                 end
             end
         else
-            if v3.distance(pos, ENTITY.GET_ENTITY_COORDS(veh, false)) <= range then
+            if v3.distance(pos, entities.get_position(veh)) <= range then
                 table.insert(vehs, veh)
             end
         end
@@ -340,17 +337,17 @@ local function get_vehs_in_range(pos, range, exclude_personal_vehs)
     return vehs
 end
 
-local function get_peds_in_range(pos, range, exclude_player_peds)
+local function get_peds_in_range_by_pointer(pos, range, exclude_player_peds)
     local peds = {}
-    for i, ped in pairs(entities.get_all_peds_as_handles()) do
+    for i, ped in pairs(entities.get_all_peds_as_pointers()) do
         if exclude_player_peds then
-            if not PED.IS_PED_A_PLAYER(ped) then
-                if v3.distance(pos, ENTITY.GET_ENTITY_COORDS(ped, false)) <= range then
+            if entities.get_player_info(ped) == 0 then
+                if v3.distance(pos, entities.get_position(ped)) <= range then
                     table.insert(peds, ped)
                 end
             end
         else
-            if v3.distance(pos, ENTITY.GET_ENTITY_COORDS(ped, false)) <= range then
+            if v3.distance(pos, entities.get_position(ped)) <= range then
                 table.insert(peds, ped)
             end
         end
@@ -358,20 +355,20 @@ local function get_peds_in_range(pos, range, exclude_player_peds)
     return peds
 end
 
-local function get_objs_in_range(pos, range)
+local function get_objs_in_range_by_pointer(pos, range)
     local objs = {}
-    for i, obj in pairs(entities.get_all_objects_as_handles()) do
-        if v3.distance(pos, ENTITY.GET_ENTITY_COORDS(obj, false)) <= range then
+    for i, obj in pairs(entities.get_all_objects_as_pointers()) do
+        if v3.distance(pos, entities.get_position(obj)) <= range then
             table.insert(objs, obj)
         end
     end
     return objs
 end
 
-local function get_pickups_in_range(pos, range)
+local function get_pickups_in_range_by_pointer(pos, range)
     local pickups = {}
-    for i, pickup in pairs(entities.get_all_objects_as_handles()) do
-        if v3.distance(pos, ENTITY.GET_ENTITY_COORDS(pickup, false)) <= range then
+    for i, pickup in pairs(entities.get_all_pickups_as_pointers()) do
+        if v3.distance(pos, entities.get_position(pickup)) <= range then
             table.insert(pickups, pickup)
         end
     end
@@ -439,58 +436,39 @@ menu.toggle(
             while local_settings.forcefield do
                 local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(my_player_id)
                 local player_pos = players.get_position(my_player_id)
-                local entities = {}
+                local ents = {}
                 if not local_settings.forcefield_ign_vehs then
-                    local vehs = get_vehs_in_range(
+                    local vehs = get_vehs_in_range_by_pointer(
                         player_pos,
                         local_settings.forcefield_range,
                         local_settings.forcefield_ign_personal_vehs
                     )
                     for i = 1, #vehs do
-                        table.insert(entities, vehs[i])
+                        table.insert(ents, vehs[i])
                     end
                 end
                 if not local_settings.forcefield_ign_peds then
-                    local peds = get_peds_in_range(
+                    local peds = get_peds_in_range_by_pointer(
                         player_pos,
                         local_settings.forcefield_range,
-                        local_settings.forcefield_ign_players
+                        true
                     )
                     for i = 1, #peds do
-                        table.insert(entities, peds[i])
+                        table.insert(ents, peds[i])
                     end
                 end
-                if not local_settings.forcefield_ign_objs then
-                    local objs = get_objs_in_range(
-                        player_pos,
-                        local_settings.forcefield_range
-                    )
-                    for i = 1, #objs do
-                        table.insert(entities, objs[i])
-                    end
-                end
-                if not local_settings.forcefield_ign_pickups then
-                    local pickups = get_pickups_in_range(
-                        player_pos,
-                        local_settings.forcefield_range
-                    )
-                    for i = 1, #pickups do
-                        table.insert(entities, pickups[i])
-                    end
-                end
-                for i, ent in pairs(entities) do
+                for i, ent in pairs(ents) do
+                    ent = entities.pointer_to_handle(ent)
                     if PED.GET_VEHICLE_PED_IS_IN(player_ped, false) ~= ent and
-                    player_ped ~= ent and
-                    not OBJECT.HAS_OBJECT_BEEN_BROKEN(ent) and
                     NETWORK.NETWORK_REQUEST_CONTROL_OF_ENTITY(ent) then
                         local force = ENTITY.GET_ENTITY_COORDS(ent)
                         v3.sub(force, player_pos)
-                        v3.mul(force, local_settings.forcefield_multiplier)
                         v3.normalise(force)
+                        v3.mul(force, local_settings.forcefield_multiplier)
                         if local_settings.forcefield_type == 1 then
                             v3.mul(force, -1)
                         end
-                        if ENTITY.IS_ENTITY_A_PED(ent) then
+                        if ENTITY.GET_ENTITY_TYPE(ent) == 1 then
                             PED.SET_PED_TO_RAGDOLL(
                                 ent,
                                 500,
@@ -615,43 +593,11 @@ menu.toggle(
 
 menu.toggle(
     forcefield_igns_local_root,
-    "Ignore Objects",
-    {"forcefieldnoobjects"},
-    "",
-    function(state)
-        local_settings.forcefield_ign_objs = state
-    end
-)
-
-menu.toggle(
-    forcefield_igns_local_root,
-    "Ignore Pickups",
-    {"forcefieldnopickups"},
-    "",
-    function(state)
-        local_settings.forcefield_ign_pickups = state
-    end,
-    true
-)
-
-menu.toggle(
-    forcefield_igns_local_root,
     "Ignore Personal Vehicles",
     {"forcefieldnopersonalvehicles"},
     "",
     function(state)
         local_settings.forcefield_ign_personal_vehs = state
-    end,
-    true
-)
-
-menu.toggle(
-    forcefield_igns_local_root,
-    "Ignore Players",
-    {"forcefieldnoplayers"},
-    "",
-    function(state)
-        local_settings.forcefield_ign_players = state
     end,
     true
 )
@@ -667,6 +613,7 @@ menu.divider(clr_world_local_root, "Clear World")
 -- Clear World Menu
 ------------------------------
 
+--[[ Broken until 0.3.3
 menu.action(
     clr_world_local_root,
     "Clear World",
@@ -677,25 +624,25 @@ menu.action(
         if local_settings.clr_world_vehs then
             local exclude_personal_vehs = local_settings.clr_world_exclude_personal_vehs
             for i, veh in pairs(get_vehs_in_range(v3.new(0, 0, 0), 16000, exclude_personal_vehs)) do
-                entities.delete_by_handle(veh)
+                entities.delete_by_pointer(veh)
                 count += 1
             end
         end
         if local_settings.clr_world_peds then
             for i, ped in pairs(get_peds_in_range(v3.new(0, 0, 0), 16000, false)) do
-                entities.delete_by_handle(ped)
+                entities.delete_by_pointer(ped)
                 count += 1
             end
         end
         if local_settings.clr_world_objs then
             for i, obj in pairs(get_objs_in_range(v3.new(0, 0, 0), 16000)) do
-                entities.delete_by_handle(obj)
+                entities.delete_by_pointer(obj)
                 count += 1
             end
         end
         if local_settings.clr_world_pickups then
             for i, pickup in pairs(get_pickups_in_range(v3.new(0, 0, 0), 16000)) do
-                entities.delete_by_handle(pickup)
+                entities.delete_by_pointer(pickup)
                 count += 1
             end
         end
@@ -757,6 +704,7 @@ menu.toggle(
     end,
     true
 )
+]]
 
 --########################################################
 
@@ -794,10 +742,7 @@ players.on_join(
             forcefield_type = 0,
             forcefield_ign_vehs = false,
             forcefield_ign_peds = false,
-            forcefield_ign_objs = false,
-            forcefield_ign_pickups = true,
-            forcefield_ign_personal_vehs = true,
-            forcefield_ign_players = true,
+            forcefield_ign_personal_vehs = true
         }
 
         if player_id == players.user() then
@@ -1394,58 +1339,39 @@ players.on_join(
                     while net_settings[player_id].forcefield do
                         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id)
                         local player_pos = players.get_position(player_id)
-                        local entities = {}
+                        local ents = {}
                         if not net_settings[player_id].forcefield_ign_vehs then
-                            local vehs = get_vehs_in_range(
+                            local vehs = get_vehs_in_range_by_pointer(
                                 player_pos,
                                 net_settings[player_id].forcefield_range,
                                 net_settings[player_id].forcefield_ign_personal_vehs
                             )
                             for i = 1, #vehs do
-                                table.insert(entities, vehs[i])
+                                table.insert(ents, vehs[i])
                             end
                         end
                         if not net_settings[player_id].forcefield_ign_peds then
-                            local peds = get_peds_in_range(
+                            local peds = get_peds_in_range_by_pointer(
                                 player_pos,
                                 net_settings[player_id].forcefield_range,
-                                net_settings[player_id].forcefield_ign_players
+                                true
                             )
                             for i = 1, #peds do
-                                table.insert(entities, peds[i])
+                                table.insert(ents, peds[i])
                             end
                         end
-                        if not net_settings[player_id].forcefield_ign_objs then
-                            local objs = get_objs_in_range(
-                                player_pos,
-                                net_settings[player_id].forcefield_range
-                            )
-                            for i = 1, #objs do
-                                table.insert(entities, objs[i])
-                            end
-                        end
-                        if not net_settings[player_id].forcefield_ign_pickups then
-                            local pickups = get_pickups_in_range(
-                                player_pos,
-                                net_settings[player_id].forcefield_range
-                            )
-                            for i = 1, #pickups do
-                                table.insert(entities, pickups[i])
-                            end
-                        end
-                        for i, ent in pairs(entities) do
+                        for i, ent in pairs(ents) do
+                            ent = entities.pointer_to_handle(ent)
                             if PED.GET_VEHICLE_PED_IS_IN(player_ped, false) ~= ent and
-                            player_ped ~= ent and
-                            OBJECT.HAS_OBJECT_BEEN_BROKEN(ent) and
                             NETWORK.NETWORK_REQUEST_CONTROL_OF_ENTITY(ent) then
                                 local force = ENTITY.GET_ENTITY_COORDS(ent)
                                 v3.sub(force, player_pos)
-                                v3.mul(force, net_settings[player_id].forcefield_multiplier)
                                 v3.normalise(force)
+                                v3.mul(force, net_settings[player_id].forcefield_multiplier)
                                 if net_settings[player_id].forcefield_type == 1 then
                                     v3.mul(force, -1)
                                 end
-                                if ENTITY.IS_ENTITY_A_PED(ent) then
+                                if ENTITY.GET_ENTITY_TYPE(ent) == 1 then
                                     PED.SET_PED_TO_RAGDOLL(
                                         ent,
                                         500,
@@ -1570,43 +1496,11 @@ players.on_join(
 
         menu.toggle(
             forcefield_igns_net_root,
-            "Ignore Objects",
-            {"netforcefieldnoobjects"},
-            "",
-            function(state)
-                net_settings[player_id].forcefield_ign_objs = state
-            end
-        )
-
-        menu.toggle(
-            forcefield_igns_net_root,
-            "Ignore Pickups",
-            {"netforcefieldnopickups"},
-            "",
-            function(state)
-                net_settings[player_id].forcefield_ign_pickups = state
-            end,
-            true
-        )
-
-        menu.toggle(
-            forcefield_igns_net_root,
             "Ignore Personal Vehicles",
             {"netforcefieldnopersonalvehicles"},
             "",
             function(state)
                 net_settings[player_id].forcefield_ign_personal_vehs = state
-            end,
-            true
-        )
-
-        menu.toggle(
-            forcefield_igns_net_root,
-            "Ignore Players",
-            {"netforcefieldnoplayers"},
-            "",
-            function(state)
-                net_settings[player_id].forcefield_ign_players = state
             end,
             true
         )
