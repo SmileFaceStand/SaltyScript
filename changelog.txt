@@ -1,31 +1,15 @@
 Changelog
 
-Additions
-- Self > Forcefield
-    - Forcefield
-    - Forcefield Range
-    - Forcefield Multiplier
-    - Forcefield Type
-    - Forcefield Ignores
-        - Ignore Vehicles
-        - Ignore Peds
-        - Ignore Objects
-        - Ignore Pickups
-        - Ignore Personal Vehicles
-        - Ignore Players
-- Players > Trolling > Forcefield
-    - Forcefield
-    - Forcefield Range
-    - Forcefield Multiplier
-    - Forcefield Type
-    - Forcefield Ignores
-        - Ignore Vehicles
-        - Ignore Peds
-        - Ignore Objects
-        - Ignore Pickups
-        - Ignore Personal Vehicles
-        - Ignore Players
+Adjustments
+- Increased Forcefield Range to 100
 
 Fixes
-- Fixed an exception when Increasing Wanted Level
+- Fixed script closing randomly
+- Fixed a crash when using Forcefield
+- Renamed some variables
+- Improved performance
 - Some other improvements and bug fixes
+
+Notes
+- To change Forcefield values for other players, you have to write "net" before "forcefield", otherwise it would overwrite the command to change the Forcefield values for yourself.
+- To Explode a player once, you have to write "ss" (stands for SmileScript) before "explode", otherwise it would overwrite the Stand's default explode command.

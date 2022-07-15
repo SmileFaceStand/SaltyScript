@@ -28,8 +28,8 @@ local local_settings = {
     forcefield_ign_peds = false,
     forcefield_ign_objs = false,
     forcefield_ign_pickups = true,
-    forcefield_ign_personal_vehs = false,
-    forcefield_ign_players = false,
+    forcefield_ign_personal_vehs = true,
+    forcefield_ign_players = true,
     clr_world_vehs = true,
     clr_world_peds = true,
     clr_world_objs = true,
@@ -38,11 +38,11 @@ local local_settings = {
 }
 
 local forcefield_types = {
-    [0] = "Push",
-    [1] = "Pull"
+    [0] = {"Push"},
+    [1] = {"Pull"}
 }
 
-local player_settings = {}
+local net_settings = {}
 
 local exp_types = {
     [0] = {"Grenade"},
@@ -286,20 +286,23 @@ local function request_ptfx_asset(asset)
     end
 end
 
+local function wait_session_transition()
+    while not util.is_session_transition_active() do
+        util.yield(250)
+    end
+end
+
 local function wait_player_revive(player_id)
-    if PLAYER.IS_PLAYER_DEAD(player_id) then
-        while PLAYER.IS_PLAYER_DEAD(player_id) do
-            util.yield(100)
-        end
+    while PLAYER.IS_PLAYER_DEAD(player_id) do
+        util.yield(100)
     end
 end
 
 local function kick_player_out_of_veh(player_id)
-    local player_name = players.get_name(player_id)
     local ped_id = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id)
     local failed = false
     if PED.IS_PED_IN_ANY_VEHICLE(ped_id, false) then
-        menu.trigger_commands("vehkick" .. player_name)
+        menu.trigger_commands("vehkick" .. players.get_name(player_id))
         start_alarm(2.5)
         while PED.IS_PED_IN_ANY_VEHICLE(ped_id, false) do
             if get_alarm() then
@@ -324,16 +327,12 @@ local function get_vehs_in_range(pos, range, exclude_personal_vehs)
     for i, veh in pairs(entities.get_all_vehicles_as_handles()) do
         if exclude_personal_vehs then
             if not entities.get_vehicle_has_been_owned_by_player(entities.handle_to_pointer(veh)) then
-                local veh_pos = ENTITY.GET_ENTITY_COORDS(veh, false)
-                local dist = v3.distance(pos, veh_pos)
-                if dist <= range then
+                if v3.distance(pos, ENTITY.GET_ENTITY_COORDS(veh, false)) <= range then
                     table.insert(vehs, veh)
                 end
             end
         else
-            local veh_pos = ENTITY.GET_ENTITY_COORDS(veh, false)
-            local dist = v3.distance(pos, veh_pos)
-            if dist <= range then
+            if v3.distance(pos, ENTITY.GET_ENTITY_COORDS(veh, false)) <= range then
                 table.insert(vehs, veh)
             end
         end
@@ -346,16 +345,12 @@ local function get_peds_in_range(pos, range, exclude_player_peds)
     for i, ped in pairs(entities.get_all_peds_as_handles()) do
         if exclude_player_peds then
             if not PED.IS_PED_A_PLAYER(ped) then
-                local ped_pos = ENTITY.GET_ENTITY_COORDS(ped, false)
-                local dist = v3.distance(pos, ped_pos)
-                if dist <= range then
+                if v3.distance(pos, ENTITY.GET_ENTITY_COORDS(ped, false)) <= range then
                     table.insert(peds, ped)
                 end
             end
         else
-            local ped_pos = ENTITY.GET_ENTITY_COORDS(ped, false)
-            local dist = v3.distance(pos, ped_pos)
-            if dist <= range then
+            if v3.distance(pos, ENTITY.GET_ENTITY_COORDS(ped, false)) <= range then
                 table.insert(peds, ped)
             end
         end
@@ -366,9 +361,7 @@ end
 local function get_objs_in_range(pos, range)
     local objs = {}
     for i, obj in pairs(entities.get_all_objects_as_handles()) do
-        local obj_pos = ENTITY.GET_ENTITY_COORDS(obj, false)
-        local dist = v3.distance(pos, obj_pos)
-        if dist <= range then
+        if v3.distance(pos, ENTITY.GET_ENTITY_COORDS(obj, false)) <= range then
             table.insert(objs, obj)
         end
     end
@@ -378,9 +371,7 @@ end
 local function get_pickups_in_range(pos, range)
     local pickups = {}
     for i, pickup in pairs(entities.get_all_objects_as_handles()) do
-        local pickup_pos = ENTITY.GET_ENTITY_COORDS(pickup, false)
-        local dist = v3.distance(pos, pickup_pos)
-        if dist <= range then
+        if v3.distance(pos, ENTITY.GET_ENTITY_COORDS(pickup, false)) <= range then
             table.insert(pickups, pickup)
         end
     end
@@ -419,9 +410,7 @@ menu.toggle(
             players.on_join(
                 function(player_id)
                     if player_id == my_player_id then
-                        while util.is_session_transition_active() do
-                            util.yield(250)
-                        end
+                        wait_session_transition()
                         menu.trigger_commands("allweapons")
                         util.toast("Weapons loaded successfully. :)")
                     end
@@ -492,42 +481,14 @@ menu.toggle(
                 for i, ent in pairs(entities) do
                     if PED.GET_VEHICLE_PED_IS_IN(player_ped, false) ~= ent and
                     player_ped ~= ent and
+                    not OBJECT.HAS_OBJECT_BEEN_BROKEN(ent) and
                     NETWORK.NETWORK_REQUEST_CONTROL_OF_ENTITY(ent) then
-                        local ent_pos = ENTITY.GET_ENTITY_COORDS(ent)
-                        local force = ent_pos
+                        local force = ENTITY.GET_ENTITY_COORDS(ent)
                         v3.sub(force, player_pos)
                         v3.mul(force, local_settings.forcefield_multiplier)
                         v3.normalise(force)
-                        if local_settings.forcefield_type == 0 then
-                            ENTITY.APPLY_FORCE_TO_ENTITY(
-                                ent,
-                                3,
-                                force.x,
-                                force.y,
-                                force.z,
-                                0,
-                                0,
-                                0.5,
-                                0,
-                                false,
-                                false,
-                                true
-                            )
-                        else
-                            ENTITY.APPLY_FORCE_TO_ENTITY(
-                                ent,
-                                3,
-                                -force.x,
-                                -force.y,
-                                -force.z,
-                                0,
-                                0,
-                                0.5,
-                                0,
-                                false,
-                                false,
-                                true
-                            )
+                        if local_settings.forcefield_type == 1 then
+                            v3.mul(force, -1)
                         end
                         if ENTITY.IS_ENTITY_A_PED(ent) then
                             PED.SET_PED_TO_RAGDOLL(
@@ -540,6 +501,20 @@ menu.toggle(
                                 false
                             )
                         end
+                        ENTITY.APPLY_FORCE_TO_ENTITY(
+                            ent,
+                            3,
+                            force.x,
+                            force.y,
+                            force.z,
+                            0,
+                            0,
+                            0.5,
+                            0,
+                            false,
+                            false,
+                            true
+                        )
                     end
                 end
                 util.yield(10)
@@ -550,13 +525,13 @@ menu.toggle(
     end
 )
 
-local forcefield_range_cmd_players = menu.slider(
+local forcefield_range_cmd_local = menu.slider(
     forcefield_local_root,
     "Forcefield Range",
-    {"selfforcefieldrange"},
+    {"forcefieldrange"},
     "",
     5,
-    50,
+    100,
     20,
     5,
     function(value)
@@ -564,7 +539,7 @@ local forcefield_range_cmd_players = menu.slider(
     end
 )
 
-menu.on_focus(forcefield_range_cmd_players, function()
+menu.on_focus(forcefield_range_cmd_local, function()
     local_settings.forcefield_range_blur = false
     local red, green, blue = get_hud_colour()
     util.create_tick_handler(function()
@@ -572,18 +547,27 @@ menu.on_focus(forcefield_range_cmd_players, function()
             return false
         end
         local player_pos = players.get_position(my_player_id)
-        GRAPHICS._DRAW_SPHERE(player_pos.x, player_pos.y, player_pos.z, local_settings.forcefield_range, red, green, blue, 0.25)
+        GRAPHICS._DRAW_SPHERE(
+            player_pos.x,
+            player_pos.y,
+            player_pos.z,
+            local_settings.forcefield_range,
+            red,
+            green,
+            blue,
+            0.25
+        )
     end)
 end)
 
-menu.on_blur(forcefield_range_cmd_players, function()
+menu.on_blur(forcefield_range_cmd_local, function()
     local_settings.forcefield_range_blur = true
 end)
 
 menu.slider(
     forcefield_local_root,
     "Forcefield Multiplier",
-    {"selfforcefieldmultiplier"},
+    {"forcefieldmultiplier"},
     "",
     1,
     10,
@@ -594,18 +578,17 @@ menu.slider(
     end
 )
 
-local forcefield_type_cmd_local = menu.slider_text(
+menu.list_select(
     forcefield_local_root,
     "Forcefield Type",
-    {"selfforcefieldtype"},
+    {"forcefieldtype"},
     "",
     forcefield_types,
-    function()end
+    0,
+    function(value)
+        local_settings.forcefield_type = value
+    end
 )
-
-util.create_tick_handler(function()
-    local_settings.forcefield_type = menu.get_value(forcefield_type_cmd_local)
-end)
 
 local forcefield_igns_local_root = menu.list(forcefield_local_root, "Forcefield Ignores")
 menu.divider(forcefield_igns_local_root, "Forcefield Ignores")
@@ -613,7 +596,7 @@ menu.divider(forcefield_igns_local_root, "Forcefield Ignores")
 menu.toggle(
     forcefield_igns_local_root,
     "Ignore Vehicles",
-    {"selfforcefieldnovehicles"},
+    {"forcefieldnovehicles"},
     "",
     function(state)
         local_settings.forcefield_ign_vehs = state
@@ -623,7 +606,7 @@ menu.toggle(
 menu.toggle(
     forcefield_igns_local_root,
     "Ignore Peds",
-    {"selfforcefieldnopeds"},
+    {"forcefieldnopeds"},
     "",
     function(state)
         local_settings.forcefield_ign_peds = state
@@ -633,7 +616,7 @@ menu.toggle(
 menu.toggle(
     forcefield_igns_local_root,
     "Ignore Objects",
-    {"selfforcefieldnoobjects"},
+    {"forcefieldnoobjects"},
     "",
     function(state)
         local_settings.forcefield_ign_objs = state
@@ -643,31 +626,34 @@ menu.toggle(
 menu.toggle(
     forcefield_igns_local_root,
     "Ignore Pickups",
-    {"selfforcefieldnopickups"},
+    {"forcefieldnopickups"},
     "",
     function(state)
         local_settings.forcefield_ign_pickups = state
-    end
+    end,
+    true
 )
 
 menu.toggle(
     forcefield_igns_local_root,
     "Ignore Personal Vehicles",
-    {"selfforcefieldnopersonalvehicles"},
+    {"forcefieldnopersonalvehicles"},
     "",
     function(state)
         local_settings.forcefield_ign_personal_vehs = state
-    end
+    end,
+    true
 )
 
 menu.toggle(
     forcefield_igns_local_root,
     "Ignore Players",
-    {"selfforcefieldnoplayers"},
+    {"forcefieldnoplayers"},
     "",
     function(state)
         local_settings.forcefield_ign_players = state
-    end
+    end,
+    true
 )
 
 ------------------------------
@@ -689,34 +675,26 @@ menu.action(
     function()
         local count = 0
         if local_settings.clr_world_vehs then
-            local pos = v3.new(0, 0, 0)
             local exclude_personal_vehs = local_settings.clr_world_exclude_personal_vehs
-            local vehs = get_vehs_in_range(pos, 16000, exclude_personal_vehs)
-            for i, veh in pairs(vehs) do
+            for i, veh in pairs(get_vehs_in_range(v3.new(0, 0, 0), 16000, exclude_personal_vehs)) do
                 entities.delete_by_handle(veh)
                 count += 1
             end
         end
         if local_settings.clr_world_peds then
-            local pos = v3.new(0, 0, 0)
-            local peds = get_peds_in_range(pos, 16000, true)
-            for i, ped in pairs(peds) do
+            for i, ped in pairs(get_peds_in_range(v3.new(0, 0, 0), 16000, false)) do
                 entities.delete_by_handle(ped)
                 count += 1
             end
         end
         if local_settings.clr_world_objs then
-            local pos = v3.new(0, 0, 0)
-            local objs = get_objs_in_range(pos, 16000)
-            for i, obj in pairs(objs) do
+            for i, obj in pairs(get_objs_in_range(v3.new(0, 0, 0), 16000)) do
                 entities.delete_by_handle(obj)
                 count += 1
             end
         end
         if local_settings.clr_world_pickups then
-            local pos = v3.new(0, 0, 0)
-            local pickups = get_pickups_in_range(pos, 16000)
-            for i, pickup in pairs(pickups) do
+            for i, pickup in pairs(get_pickups_in_range(v3.new(0, 0, 0), 16000)) do
                 entities.delete_by_handle(pickup)
                 count += 1
             end
@@ -782,13 +760,13 @@ menu.toggle(
 
 --########################################################
 
-  -------------| Players Features Generator |-------------
+  ---------------| Net Features Generator |---------------
 
 --########################################################
 
 players.on_join(
     function(player_id)
-        player_settings[player_id] = {
+        net_settings[player_id] = {
             wanted_level = 0,
             exp_type = 0,
             exp_delay = 100,
@@ -818,34 +796,35 @@ players.on_join(
             forcefield_ign_peds = false,
             forcefield_ign_objs = false,
             forcefield_ign_pickups = true,
-            forcefield_ign_personal_vehs = false,
-            forcefield_ign_players = false,
+            forcefield_ign_personal_vehs = true,
+            forcefield_ign_players = true,
         }
+
         if player_id == players.user() then
             my_player_id = player_id
         end
 
         menu.divider(menu.player_root(player_id), "SmileScript")
-        local trolling_players_root = menu.list(menu.player_root(player_id), "Trolling")
-        menu.divider(trolling_players_root, "Trolling")
+        local trolling_net_root = menu.list(menu.player_root(player_id), "Trolling")
+        menu.divider(trolling_net_root, "Trolling")
 
         ------------------------------
         -- Trolling Section
         ------------------------------
 
-        local explosions_players_root = menu.list(trolling_players_root, "Explosions")
-        menu.divider(explosions_players_root, "Explosions")
-        local particles_players_root = menu.list(trolling_players_root, "Particles")
-        menu.divider(particles_players_root, "Particles")
-        local entities_players_root = menu.list(trolling_players_root, "Entities")
-        menu.divider(entities_players_root, "Entities")
-        local cages_players_root = menu.list(trolling_players_root, "Cages")
-        menu.divider(cages_players_root, "Cages")
-        local forcefield_players_root = menu.list(trolling_players_root, "Forcefield")
-        menu.divider(forcefield_players_root, "Forcefield")
+        local explosions_net_root = menu.list(trolling_net_root, "Explosions")
+        menu.divider(explosions_net_root, "Explosions")
+        local particles_net_root = menu.list(trolling_net_root, "Particles")
+        menu.divider(particles_net_root, "Particles")
+        local entities_net_root = menu.list(trolling_net_root, "Entities")
+        menu.divider(entities_net_root, "Entities")
+        local cages_net_root = menu.list(trolling_net_root, "Cages")
+        menu.divider(cages_net_root, "Cages")
+        local forcefield_net_root = menu.list(trolling_net_root, "Forcefield")
+        menu.divider(forcefield_net_root, "Forcefield")
 
         menu.click_slider(
-            trolling_players_root,
+            trolling_net_root,
             "Increase Wanted Level",
             {"wantedlevel"},
             "It may take a few seconds.",
@@ -874,7 +853,7 @@ players.on_join(
                         util.toast("Wanted Level increased successfully. :)")
                     end
                 else
-                    util.toast("Wanted Level is already " .. memory.read_uint(player_info + 0x0888) .. ".")
+                    util.toast("Wanted Level is already " .. memory.read_uint(player_info + 0x0888) .. ". :)")
                 end
             end
         )
@@ -884,94 +863,94 @@ players.on_join(
         ------------------------------
 
         menu.action(
-            explosions_players_root,
+            explosions_net_root,
             "Explode",
             {"ssexplode"},
             "",
             function()
                 local player_pos = players.get_position(player_id)
-                if player_settings.exp_blamed then
+                if net_settings.exp_blamed then
                     FIRE.ADD_OWNED_EXPLOSION(
                         PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(my_player_id),
                         player_pos.x,
                         player_pos.y,
                         player_pos.z,
-                        player_settings[player_id].exp_type,
+                        net_settings[player_id].exp_type,
                         1,
-                        player_settings[player_id].exp_audible,
-                        not player_settings[player_id].exp_visible,
-                        player_settings[player_id].exp_shake
+                        net_settings[player_id].exp_audible,
+                        not net_settings[player_id].exp_visible,
+                        net_settings[player_id].exp_shake
                     )
                 else
                     FIRE.ADD_EXPLOSION(
                         player_pos.x,
                         player_pos.y,
                         player_pos.z,
-                        player_settings[player_id].exp_type,
+                        net_settings[player_id].exp_type,
                         1,
-                        player_settings[player_id].exp_audible,
-                        not player_settings[player_id].exp_visible,
-                        player_settings[player_id].exp_shake,
-                        not player_settings[player_id].exp_damage
+                        net_settings[player_id].exp_audible,
+                        not net_settings[player_id].exp_visible,
+                        net_settings[player_id].exp_shake,
+                        not net_settings[player_id].exp_damage
                     )
                 end
             end
         )
 
         menu.toggle_loop(
-            explosions_players_root,
+            explosions_net_root,
             "Explode Loop",
             {"explodeloop"},
             "",
             function()
                 local player_pos = players.get_position(player_id)
-                if player_settings.exp_blamed then
+                if net_settings.exp_blamed then
                     FIRE.ADD_OWNED_EXPLOSION(
                         PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(my_player_id),
                         player_pos.x,
                         player_pos.y,
                         player_pos.z,
-                        player_settings[player_id].exp_type,
+                        net_settings[player_id].exp_type,
                         1,
-                        player_settings[player_id].exp_audible,
-                        not player_settings[player_id].exp_visible,
-                        player_settings[player_id].exp_shake
+                        net_settings[player_id].exp_audible,
+                        not net_settings[player_id].exp_visible,
+                        net_settings[player_id].exp_shake
                     )
                 else
                     FIRE.ADD_EXPLOSION(
                         player_pos.x,
                         player_pos.y,
                         player_pos.z,
-                        player_settings[player_id].exp_type,
+                        net_settings[player_id].exp_type,
                         1,
-                        player_settings[player_id].exp_audible,
-                        not player_settings[player_id].exp_visible,
-                        player_settings[player_id].exp_shake,
-                        not player_settings[player_id].exp_damage
+                        net_settings[player_id].exp_audible,
+                        not net_settings[player_id].exp_visible,
+                        net_settings[player_id].exp_shake,
+                        not net_settings[player_id].exp_damage
                     )
                 end
 
-                util.yield(player_settings[player_id].exp_delay)
+                util.yield(net_settings[player_id].exp_delay)
             end
         )
 
         menu.list_select(
-            explosions_players_root,
+            explosions_net_root,
             "Explosion Type",
             {"explosiontype"},
             "",
             exp_types,
             0,
             function(value)
-                player_settings[player_id].exp_type = value
+                net_settings[player_id].exp_type = value
             end
         )
 
-        local explosion_other_players_root = menu.list(explosions_players_root, "Other Settings")
-        menu.divider(explosion_other_players_root, "Other Settings")
+        local explosion_other_net_root = menu.list(explosions_net_root, "Other Settings")
+        menu.divider(explosion_other_net_root, "Other Settings")
 
         menu.slider(
-            explosion_other_players_root,
+            explosion_other_net_root,
             "Explosion Delay",
             {"explosiondelay"},
             "",
@@ -980,12 +959,12 @@ players.on_join(
             250,
             10,
             function(value)
-                player_settings[player_id].exp_delay = value
+                net_settings[player_id].exp_delay = value
             end
         )
 
         menu.slider(
-            explosion_other_players_root,
+            explosion_other_net_root,
             "Explosion Shake",
             {"explosionshake"},
             "",
@@ -994,49 +973,49 @@ players.on_join(
             1,
             1,
             function(value)
-                player_settings[player_id].exp_shake = value
+                net_settings[player_id].exp_shake = value
             end
         )
 
         menu.toggle(
-            explosion_other_players_root,
+            explosion_other_net_root,
             "Explosion Blamed",
             {"explosionblamed"},
             "",
             function(state)
-                player_settings[player_id].exp_blamed = state
+                net_settings[player_id].exp_blamed = state
             end
         )
 
         menu.toggle(
-            explosion_other_players_root,
+            explosion_other_net_root,
             "Explosion Audible",
             {"explosionaudible"},
             "",
             function(state)
-                player_settings[player_id].exp_audible = state
+                net_settings[player_id].exp_audible = state
             end,
             true
         )
 
         menu.toggle(
-            explosion_other_players_root,
+            explosion_other_net_root,
             "Explosion Visible",
             {"explosionvisible"},
             "",
             function(state)
-                player_settings[player_id].exp_visible = state
+                net_settings[player_id].exp_visible = state
             end,
             true
         )
 
         menu.toggle(
-            explosion_other_players_root,
+            explosion_other_net_root,
             "Explosion Damage",
             {"explosiondamage"},
             "If Explosion Blamed is on, turning this off won't have any effect.",
             function(state)
-                player_settings[player_id].exp_damage = state
+                net_settings[player_id].exp_damage = state
             end,
             true
         )
@@ -1046,19 +1025,19 @@ players.on_join(
         ------------------------------
 
         menu.toggle(
-            particles_players_root,
+            particles_net_root,
             "Start PTFX",
             {"ptfx"},
             "",
             function(state)
                 if state then
-                    request_ptfx_asset(player_settings[player_id].ptfx_asset)
-                    for i = 1, player_settings[player_id].ptfx_power, 1 do
-                        GRAPHICS.USE_PARTICLE_FX_ASSET(player_settings[player_id].ptfx_asset)
+                    request_ptfx_asset(net_settings[player_id].ptfx_asset)
+                    for i = 1, net_settings[player_id].ptfx_power, 1 do
+                        GRAPHICS.USE_PARTICLE_FX_ASSET(net_settings[player_id].ptfx_asset)
                         table.insert(
-                            player_settings[player_id].ptfx_ids,
+                            net_settings[player_id].ptfx_ids,
                             GRAPHICS.START_NETWORKED_PARTICLE_FX_LOOPED_ON_ENTITY(
-                                player_settings[player_id].ptfx_name,
+                                net_settings[player_id].ptfx_name,
                                 PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id),
                                 0,
                                 0,
@@ -1066,7 +1045,7 @@ players.on_join(
                                 0,
                                 0,
                                 0,
-                                player_settings[player_id].ptfx_size,
+                                net_settings[player_id].ptfx_size,
                                 false,
                                 false,
                                 false
@@ -1075,17 +1054,17 @@ players.on_join(
                     end
                     util.toast("PTFX started successfully. :)")
                     while state do
-                        if PLAYER.IS_PLAYER_DEAD(player_settings[player_id].ptfx_power) then
+                        if PLAYER.IS_PLAYER_DEAD(net_settings[player_id].ptfx_power) then
                             wait_player_revive(player_id)
-                            for i, ptfx_id in pairs(player_settings[player_id].ptfx_ids) do
+                            for i, ptfx_id in pairs(net_settings[player_id].ptfx_ids) do
                                 GRAPHICS.STOP_PARTICLE_FX_LOOPED(ptfx_id, false)
                             end
-                            for i = 1, player_settings[player_id].ptfx_power, 1 do
-                                GRAPHICS.USE_PARTICLE_FX_ASSET(player_settings[player_id].ptfx_asset)
+                            for i = 1, net_settings[player_id].ptfx_power, 1 do
+                                GRAPHICS.USE_PARTICLE_FX_ASSET(net_settings[player_id].ptfx_asset)
                                 table.insert(
-                                    player_settings[player_id].ptfx_ids,
+                                    net_settings[player_id].ptfx_ids,
                                     GRAPHICS.START_NETWORKED_PARTICLE_FX_LOOPED_ON_ENTITY(
-                                        player_settings[player_id].ptfx_name,
+                                        net_settings[player_id].ptfx_name,
                                         PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id),
                                         0,
                                         0,
@@ -1093,7 +1072,7 @@ players.on_join(
                                         0,
                                         0,
                                         0,
-                                        player_settings[player_id].ptfx_size,
+                                        net_settings[player_id].ptfx_size,
                                         false,
                                         false,
                                         false
@@ -1105,7 +1084,7 @@ players.on_join(
                         end
                     end
                 else
-                    for i, ptfx_id in pairs(player_settings[player_id].ptfx_ids) do
+                    for i, ptfx_id in pairs(net_settings[player_id].ptfx_ids) do
                         GRAPHICS.STOP_PARTICLE_FX_LOOPED(ptfx_id, false)
                     end
                     util.toast("PTFX stopped successfully. :)")
@@ -1114,7 +1093,7 @@ players.on_join(
         )
 
         menu.slider(
-            particles_players_root,
+            particles_net_root,
             "PTFX Amount",
             {"ptfxamount"},
             "",
@@ -1123,12 +1102,12 @@ players.on_join(
             1,
             1,
             function(value)
-                player_settings[player_id].ptfx_power = value
+                net_settings[player_id].ptfx_power = value
             end
         )
 
         menu.slider(
-            particles_players_root,
+            particles_net_root,
             "PTFX Size",
             {"ptfxsize"},
             "",
@@ -1137,11 +1116,11 @@ players.on_join(
             5,
             1,
             function(value)
-                player_settings[player_id].ptfx_size = value
+                net_settings[player_id].ptfx_size = value
             end
         )
 
-        local particles_other_player_root = menu.list(particles_players_root, "Other Settings")
+        local particles_other_player_root = menu.list(particles_net_root, "Other Settings")
         menu.divider(particles_other_player_root, "Other Settings")
 
         menu.text_input(
@@ -1150,7 +1129,7 @@ players.on_join(
             {"ptfxasset"},
             "",
             function(value)
-                player_settings[player_id].ptfx_asset = value
+                net_settings[player_id].ptfx_asset = value
             end,
             "core"
         )
@@ -1161,7 +1140,7 @@ players.on_join(
             {"ptfxname"},
             "",
             function(value)
-                player_settings[player_id].ptfx_name = value
+                net_settings[player_id].ptfx_name = value
             end,
             "exp_grd_grenade_smoke"
         )
@@ -1178,18 +1157,31 @@ players.on_join(
         ------------------------------
 
         menu.action(
-            entities_players_root,
+            entities_net_root,
             "Spawn Entities",
             {"spamentities"},
             "",
             function()
-                local ent_hash = util.joaat(ent_types[player_settings[player_id].ent_type].name)
+                local ent_hash = util.joaat(ent_types[net_settings[player_id].ent_type].name)
+                request_model(ent_hash)
                 local player_pos = players.get_position(player_id)
-                for i = 1, player_settings[player_id].ent_amount, 1 do
-                    local random_ofst = v3.new(math.random(-1, 1) * 0.25, math.random(-1, 1) * 0.25, math.random(-1, 1) * 0.25)
+                for i = 1, net_settings[player_id].ent_amount, 1 do
+                    local random_ofst = v3.new(
+                        math.random(-1, 1) * 0.25,
+                        math.random(-1, 1) * 0.25,
+                        math.random(-1, 1) * 0.25
+                    )
                     local ent_pos = player_pos
                     v3.add(ent_pos, random_ofst)
-                    OBJECT.CREATE_OBJECT_NO_OFFSET(ent_hash, ent_pos.x, ent_pos.y, ent_pos.z, true, false, false)
+                    OBJECT.CREATE_OBJECT_NO_OFFSET(
+                        ent_hash,
+                        ent_pos.x,
+                        ent_pos.y,
+                        ent_pos.z,
+                        true,
+                        false,
+                        false
+                    )
                 end
                 FIRE.ADD_EXPLOSION(
                     player_pos.x,
@@ -1207,7 +1199,7 @@ players.on_join(
         )
 
         menu.slider(
-            entities_players_root,
+            entities_net_root,
             "Entity Amount",
             {"entitiesamount"},
             "",
@@ -1216,19 +1208,19 @@ players.on_join(
             1,
             1,
             function(value)
-                player_settings[player_id].ent_amount = value
+                net_settings[player_id].ent_amount = value
             end
         )
 
         menu.list_select(
-            entities_players_root,
+            entities_net_root,
             "Entity Type",
             {"entitytype"},
             "",
             ent_types,
             0,
             function(value)
-                player_settings[player_id].ent_type = value
+                net_settings[player_id].ent_type = value
             end
         )
 
@@ -1237,43 +1229,43 @@ players.on_join(
         ------------------------------
 
         menu.toggle(
-            cages_players_root,
+            cages_net_root,
             "Cage",
             {"cage"},
             "",
             function(state)
                 if state then
-                    player_settings[player_id].cage_failed = false
-                    for i, cage_object in ipairs(cage_types[player_settings[player_id].cage_type].objs) do
+                    net_settings[player_id].cage_failed = false
+                    for i, cage_object in ipairs(cage_types[net_settings[player_id].cage_type].objs) do
                         local cage_hash = util.joaat(cage_object.name)
                         request_model(cage_hash)
                         if kick_player_out_of_veh(player_id) then
-                            player_settings[player_id].cage_failed = true
+                            net_settings[player_id].cage_failed = true
                             break
                         end
                         local ent_pos = players.get_position(player_id)
                         v3.add(ent_pos, cage_object.ofst)
                         local cage_obj = entities.create_object(cage_hash, ent_pos)
-                        table.insert(player_settings[player_id].cage_ids, cage_obj)
+                        table.insert(net_settings[player_id].cage_ids, cage_obj)
                         ENTITY.SET_ENTITY_ROTATION(cage_obj, cage_object.rot.x, cage_object.rot.y, cage_object.rot.z, 1, true)
                         ENTITY.FREEZE_ENTITY_POSITION(cage_obj, true)
-                        ENTITY.SET_ENTITY_VISIBLE(cage_obj, cage_obj, false)
+                        ENTITY.SET_ENTITY_VISIBLE(cage_obj, net_settings[player_id].cage_visible, false)
                         STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(cage_hash)
                     end
-                    if player_settings[player_id].cage_failed then
+                    if net_settings[player_id].cage_failed then
                         util.toast("Failed to cage the player. :/")
                         return
                     else
                         util.toast("Player caged successfully. :)")
                     end
                 else
-                    if not player_settings[player_id].cage_failed then
-                        for i, cage_id in pairs(player_settings[player_id].cage_ids) do
+                    if not net_settings[player_id].cage_failed then
+                        for i, cage_id in pairs(net_settings[player_id].cage_ids) do
                             entities.delete_by_handle(cage_id)
                         end
 
-                        for cage_id in pairs(player_settings[player_id].cage_ids) do
-                            player_settings[player_id].cage_ids[cage_id] = nil
+                        for cage_id in pairs(net_settings[player_id].cage_ids) do
+                            net_settings[player_id].cage_ids[cage_id] = nil
                         end
                         util.toast("Player uncaged successfully. :)")
                     end
@@ -1282,66 +1274,65 @@ players.on_join(
         )
 
         menu.toggle(
-            cages_players_root,
+            cages_net_root,
             "Automatic Cage",
             {"automaticcage"},
             "Automatically re-cage the player if he leaves the cage.",
             function(state)
-                player_settings[player_id].cage_automatic = state
+                net_settings[player_id].cage_automatic = state
                 if state then
                     local first_player_pos
-                    player_settings[player_id].cage_failed = false
-                    for i, cage_object in ipairs(cage_types[player_settings[player_id].cage_type].objs) do
+                    net_settings[player_id].cage_failed = false
+                    for i, cage_object in ipairs(cage_types[net_settings[player_id].cage_type].objs) do
                         local cage_hash = util.joaat(cage_object.name)
                         request_model(cage_hash)
                         if kick_player_out_of_veh(player_id) then
-                            player_settings[player_id].cage_failed = true
+                            net_settings[player_id].cage_failed = true
                             break
                         end
                         first_player_pos = players.get_position(player_id)
                         local ent_pos = players.get_position(player_id)
                         v3.add(ent_pos, cage_object.ofst)
                         local cage_obj = entities.create_object(cage_hash, ent_pos)
-                        table.insert(player_settings[player_id].cage_ids, cage_obj)
+                        table.insert(net_settings[player_id].cage_ids, cage_obj)
                         ENTITY.SET_ENTITY_ROTATION(cage_obj, cage_object.rot.x, cage_object.rot.y, cage_object.rot.z, 1, true)
                         ENTITY.FREEZE_ENTITY_POSITION(cage_obj, true)
-                        ENTITY.SET_ENTITY_VISIBLE(cage_obj, cage_obj, false)
+                        ENTITY.SET_ENTITY_VISIBLE(cage_obj, net_settings[player_id].cage_visible, false)
                         STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(cage_hash)
                     end
-                    if player_settings[player_id].cage_failed then
+                    if net_settings[player_id].cage_failed then
                         util.toast("Failed to cage the player. :/")
                         return
                     else
                         util.toast("Player caged successfully. :)")
                     end
-                    while player_settings[player_id].cage_automatic do
-                        local second_player_pos = players.get_position(player_id)
-                        if v3.distance(first_player_pos, second_player_pos) >= cage_types[player_settings[player_id].cage_type].max_dist then
+                    while net_settings[player_id].cage_automatic do
+                        if v3.distance(first_player_pos, players.get_position(player_id)) >= cage_types[net_settings[player_id].cage_type].max_dist then
                             first_player_pos = players.get_position(player_id)
-                            for i, cage_id in pairs(player_settings[player_id].cage_ids) do
+                            for i, cage_id in pairs(net_settings[player_id].cage_ids) do
                                 entities.delete_by_handle(cage_id)
                             end
-                            for cage_id in pairs(player_settings[player_id].cage_ids) do
-                                player_settings[player_id].cage_ids[cage_id] = nil
+                            for cage_id in pairs(net_settings[player_id].cage_ids) do
+                                net_settings[player_id].cage_ids[cage_id] = nil
                             end
-                            for i, cage_object in ipairs(cage_types[player_settings[player_id].cage_type].objs) do
+                            for i, cage_object in ipairs(cage_types[net_settings[player_id].cage_type].objs) do
                                 local cage_hash = util.joaat(cage_object.name)
                                 request_model(cage_hash)
                                 if kick_player_out_of_veh(player_id) then
-                                    player_settings[player_id].cage_failed = true
+                                    net_settings[player_id].cage_failed = true
                                     break
                                 end
                                 first_player_pos = players.get_position(player_id)
                                 local ent_pos = players.get_position(player_id)
                                 v3.add(ent_pos, cage_object.ofst)
                                 local cage_obj = entities.create_object(cage_hash, ent_pos)
-                                table.insert(player_settings[player_id].cage_ids, cage_obj)
+                                table.insert(net_settings[player_id].cage_ids, cage_obj)
                                 ENTITY.SET_ENTITY_ROTATION(cage_obj, cage_object.rot.x, cage_object.rot.y, cage_object.rot.z, 1, true)
                                 ENTITY.FREEZE_ENTITY_POSITION(cage_obj, true)
-                                ENTITY.SET_ENTITY_VISIBLE(cage_obj, cage_obj, false)
+                                ENTITY.SET_ENTITY_VISIBLE(cage_obj, net_settings[player_id].cage_visible, false)
                                 STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(cage_hash)
                             end
-                            if player_settings[player_id].cage_failed then
+                            if net_settings[player_id].cage_failed then
                                 util.toast("Failed to re-cage the player. :/")
                                 return
                             else
@@ -1351,12 +1342,12 @@ players.on_join(
                         util.yield(250)
                     end
                 else
-                    if not player_settings[player_id].cage_failed then
-                        for i, cage_id in pairs(player_settings[player_id].cage_ids) do
+                    if not net_settings[player_id].cage_failed then
+                        for i, cage_id in pairs(net_settings[player_id].cage_ids) do
                             entities.delete_by_handle(cage_id)
                         end
-                        for cage_id in pairs(player_settings[player_id].cage_ids) do
-                            player_settings[player_id].cage_ids[cage_id] = nil
+                        for cage_id in pairs(net_settings[player_id].cage_ids) do
+                            net_settings[player_id].cage_ids[cage_id] = nil
                         end
                         util.toast("Player uncaged successfully. :)")
                     end
@@ -1365,24 +1356,24 @@ players.on_join(
         )
 
         menu.list_select(
-            cages_players_root,
+            cages_net_root,
             "Cage Type",
             {"cagetype"},
             "",
             cage_types,
             0,
             function(value)
-                player_settings[player_id].cage_type = value
+                net_settings[player_id].cage_type = value
             end
         )
 
         menu.toggle(
-            cages_players_root,
+            cages_net_root,
             "Cage Visible",
             {"cagevisible"},
             "",
             function(state)
-                player_settings[player_id].cage_visible = state
+                net_settings[player_id].cage_visible = state
             end,
             true
         )
@@ -1392,51 +1383,51 @@ players.on_join(
         ------------------------------
 
         menu.toggle(
-            forcefield_players_root,
+            forcefield_net_root,
             "Forcefield",
-            {"forcefield"},
+            {"netforcefield"},
             "",
             function(state)
-                player_settings[player_id].forcefield = state
+                net_settings[player_id].forcefield = state
                 if state then
                     util.toast("Forcefield enabled successfully. :)")
-                    while player_settings[player_id].forcefield do
+                    while net_settings[player_id].forcefield do
                         local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id)
                         local player_pos = players.get_position(player_id)
                         local entities = {}
-                        if not player_settings[player_id].forcefield_ign_vehs then
+                        if not net_settings[player_id].forcefield_ign_vehs then
                             local vehs = get_vehs_in_range(
                                 player_pos,
-                                player_settings[player_id].forcefield_range,
-                                player_settings[player_id].forcefield_ign_personal_vehs
+                                net_settings[player_id].forcefield_range,
+                                net_settings[player_id].forcefield_ign_personal_vehs
                             )
                             for i = 1, #vehs do
                                 table.insert(entities, vehs[i])
                             end
                         end
-                        if not player_settings[player_id].forcefield_ign_peds then
+                        if not net_settings[player_id].forcefield_ign_peds then
                             local peds = get_peds_in_range(
                                 player_pos,
-                                player_settings[player_id].forcefield_range,
-                                player_settings[player_id].forcefield_ign_players
+                                net_settings[player_id].forcefield_range,
+                                net_settings[player_id].forcefield_ign_players
                             )
                             for i = 1, #peds do
                                 table.insert(entities, peds[i])
                             end
                         end
-                        if not player_settings[player_id].forcefield_ign_objs then
+                        if not net_settings[player_id].forcefield_ign_objs then
                             local objs = get_objs_in_range(
                                 player_pos,
-                                player_settings[player_id].forcefield_range
+                                net_settings[player_id].forcefield_range
                             )
                             for i = 1, #objs do
                                 table.insert(entities, objs[i])
                             end
                         end
-                        if not player_settings[player_id].forcefield_ign_pickups then
+                        if not net_settings[player_id].forcefield_ign_pickups then
                             local pickups = get_pickups_in_range(
                                 player_pos,
-                                player_settings[player_id].forcefield_range
+                                net_settings[player_id].forcefield_range
                             )
                             for i = 1, #pickups do
                                 table.insert(entities, pickups[i])
@@ -1445,42 +1436,14 @@ players.on_join(
                         for i, ent in pairs(entities) do
                             if PED.GET_VEHICLE_PED_IS_IN(player_ped, false) ~= ent and
                             player_ped ~= ent and
+                            OBJECT.HAS_OBJECT_BEEN_BROKEN(ent) and
                             NETWORK.NETWORK_REQUEST_CONTROL_OF_ENTITY(ent) then
-                                local ent_pos = ENTITY.GET_ENTITY_COORDS(ent)
-                                local force = ent_pos
+                                local force = ENTITY.GET_ENTITY_COORDS(ent)
                                 v3.sub(force, player_pos)
-                                v3.mul(force, player_settings[player_id].forcefield_multiplier)
+                                v3.mul(force, net_settings[player_id].forcefield_multiplier)
                                 v3.normalise(force)
-                                if player_settings[player_id].forcefield_type == 0 then
-                                    ENTITY.APPLY_FORCE_TO_ENTITY(
-                                        ent,
-                                        3,
-                                        force.x,
-                                        force.y,
-                                        force.z,
-                                        0,
-                                        0,
-                                        0.5,
-                                        0,
-                                        false,
-                                        false,
-                                        true
-                                    )
-                                else
-                                    ENTITY.APPLY_FORCE_TO_ENTITY(
-                                        ent,
-                                        3,
-                                        -force.x,
-                                        -force.y,
-                                        -force.z,
-                                        0,
-                                        0,
-                                        0.5,
-                                        0,
-                                        false,
-                                        false,
-                                        true
-                                    )
+                                if net_settings[player_id].forcefield_type == 1 then
+                                    v3.mul(force, -1)
                                 end
                                 if ENTITY.IS_ENTITY_A_PED(ent) then
                                     PED.SET_PED_TO_RAGDOLL(
@@ -1493,6 +1456,20 @@ players.on_join(
                                         false
                                     )
                                 end
+                                ENTITY.APPLY_FORCE_TO_ENTITY(
+                                    ent,
+                                    3,
+                                    force.x,
+                                    force.y,
+                                    force.z,
+                                    0,
+                                    0,
+                                    0.5,
+                                    0,
+                                    false,
+                                    false,
+                                    true
+                                )
                             end
                         end
                         util.yield(10)
@@ -1504,132 +1481,141 @@ players.on_join(
         )
 
         local forcefield_range_cmd_players = menu.slider(
-            forcefield_players_root,
+            forcefield_net_root,
             "Forcefield Range",
-            {"forcefieldrange"},
+            {"netforcefieldrange"},
             "",
             5,
-            50,
+            100,
             20,
             5,
             function(value)
-                player_settings[player_id].forcefield_range = value
+                net_settings[player_id].forcefield_range = value
             end
         )
 
         menu.on_focus(forcefield_range_cmd_players, function()
-            player_settings[player_id].forcefield_range_blur = false
+            net_settings[player_id].forcefield_range_blur = false
             local red, green, blue = get_hud_colour()
             util.create_tick_handler(function()
-                if player_settings[player_id].forcefield_range_blur then
+                if net_settings[player_id].forcefield_range_blur then
                     return false
                 end
                 local player_pos = players.get_position(player_id)
-                GRAPHICS._DRAW_SPHERE(player_pos.x, player_pos.y, player_pos.z, player_settings[player_id].forcefield_range, red, green, blue, 0.25)
+                GRAPHICS._DRAW_SPHERE(
+                    player_pos.x,
+                    player_pos.y,
+                    player_pos.z,
+                    net_settings[player_id].forcefield_range,
+                    red,
+                    green,
+                    blue,
+                    0.25
+                )
             end)
         end)
 
         menu.on_blur(forcefield_range_cmd_players, function()
-            player_settings[player_id].forcefield_range_blur = true
+            net_settings[player_id].forcefield_range_blur = true
         end)
 
         menu.slider(
-            forcefield_players_root,
+            forcefield_net_root,
             "Forcefield Multiplier",
-            {"forcefieldmultiplier"},
+            {"netforcefieldmultiplier"},
             "",
             1,
             10,
             1,
             1,
             function(value)
-                player_settings[player_id].forcefield_multiplier = value * 0.5
+                net_settings[player_id].forcefield_multiplier = value * 0.5
             end
         )
 
-        local forcefield_type_cmd_players = menu.slider_text(
-            forcefield_players_root,
+        menu.list_select(
+            forcefield_net_root,
             "Forcefield Type",
-            {"forcefieldtype"},
+            {"netforcefieldtype"},
             "",
             forcefield_types,
-            function()end
+            0,
+            function(value)
+                net_settings[player_id].forcefield_type = value
+            end
         )
 
-        util.create_tick_handler(function()
-            if player_settings[player_id] ~= nil then
-                player_settings[player_id].forcefield_type = menu.get_value(forcefield_type_cmd_players)
-            end
-        end)
-
-        local forcefield_igns_players_root = menu.list(forcefield_players_root, "Forcefield Ignores")
-        menu.divider(forcefield_igns_players_root, "Forcefield Ignores")
+        local forcefield_igns_net_root = menu.list(forcefield_net_root, "Forcefield Ignores")
+        menu.divider(forcefield_igns_net_root, "Forcefield Ignores")
 
         menu.toggle(
-            forcefield_igns_players_root,
+            forcefield_igns_net_root,
             "Ignore Vehicles",
-            {"forcefieldnovehicles"},
+            {"netforcefieldnovehicles"},
             "",
             function(state)
-                player_settings[player_id].forcefield_ign_vehs = state
+                net_settings[player_id].forcefield_ign_vehs = state
             end
         )
 
         menu.toggle(
-            forcefield_igns_players_root,
+            forcefield_igns_net_root,
             "Ignore Peds",
-            {"forcefieldnopeds"},
+            {"netforcefieldnopeds"},
             "",
             function(state)
-                player_settings[player_id].forcefield_ign_peds = state
+                net_settings[player_id].forcefield_ign_peds = state
             end
         )
 
         menu.toggle(
-            forcefield_igns_players_root,
+            forcefield_igns_net_root,
             "Ignore Objects",
-            {"forcefieldnoobjects"},
+            {"netforcefieldnoobjects"},
             "",
             function(state)
-                player_settings[player_id].forcefield_ign_objs = state
+                net_settings[player_id].forcefield_ign_objs = state
             end
         )
 
         menu.toggle(
-            forcefield_igns_players_root,
+            forcefield_igns_net_root,
             "Ignore Pickups",
-            {"forcefieldnopickups"},
+            {"netforcefieldnopickups"},
             "",
             function(state)
-                player_settings[player_id].forcefield_ign_pickups = state
-            end
+                net_settings[player_id].forcefield_ign_pickups = state
+            end,
+            true
         )
 
         menu.toggle(
-            forcefield_igns_players_root,
+            forcefield_igns_net_root,
             "Ignore Personal Vehicles",
-            {"forcefieldnopersonalvehicles"},
+            {"netforcefieldnopersonalvehicles"},
             "",
             function(state)
-                player_settings[player_id].forcefield_ign_personal_vehs = state
-            end
+                net_settings[player_id].forcefield_ign_personal_vehs = state
+            end,
+            true
         )
 
         menu.toggle(
-            forcefield_igns_players_root,
+            forcefield_igns_net_root,
             "Ignore Players",
-            {"forcefieldnoplayers"},
+            {"netforcefieldnoplayers"},
             "",
             function(state)
-                player_settings[player_id].forcefield_ign_players = state
-            end
+                net_settings[player_id].forcefield_ign_players = state
+            end,
+            true
         )
     end
 )
 
 players.on_leave(
     function(player_id)
-        player_settings[player_id] = nil
+        net_settings[player_id] = nil
     end
 )
 
