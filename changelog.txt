@@ -1,21 +1,11 @@
 Changelog
 
-Removals
-- Removed Self > Forcefield > Ignores
-    - Ignore Objects
-    - Ignore Pickups
-    - Ignore Players
-- Removed Players > Trolling > Forcefield > Ignores
-    - Ignore Objects
-    - Ignore Pickups
-    - Ignore Players
-
 Adjustments
-- Now the Forcefield won't affect Objects, Pickups anymore, because they were highly unstable and buggy
+- Removed some useless message
 
 Fixes
-- Fixed various problems with the Forcefield
-- Some other improvements and bug fixes
+- Major code cleanup
+- Major improvements and bug fixes
 
 Notes
-- Since there were major bugs with Forcefield, i want to make this update as soon as possible, but during the fix, Clear World broken, so at the moment won't be avaible
+- Re-added Clear World, but now will not be possible using it in singleplayer, since in my testings, i noticed there is an high change that crashes the game (Not a new problem, it would still crash even in older versions)
