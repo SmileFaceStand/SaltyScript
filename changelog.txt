@@ -1,4 +1,5 @@
 Changelog
+This is just a quick hotfix
 
 Fixes
 - Fixed Forcefield sphere colour
