@@ -1,11 +1,4 @@
 Changelog
 
-Adjustments
-- Removed some useless message
-
 Fixes
-- Major code cleanup
-- Major improvements and bug fixes
-
-Notes
-- Re-added Clear World, but now will not be possible using it in singleplayer, since in my testings, i noticed there is an high change that crashes the game (Not a new problem, it would still crash even in older versions)
+- Fixed Forcefield sphere colour

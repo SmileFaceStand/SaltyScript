@@ -246,9 +246,9 @@ end
 
 local function get_hud_colour()
     local red_command_ref <const> = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Red")
-    local green_command_ref <const> = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Red")
-    local blue_command_ref <const> = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Red")
-    local alpha_command_ref <const> = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Red")
+    local green_command_ref <const> = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Green")
+    local blue_command_ref <const> = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Blue")
+    local alpha_command_ref <const> = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Opacity")
     local red <const> = menu.get_value(red_command_ref)
     local green <const> = menu.get_value(green_command_ref)
     local blue <const> = menu.get_value(blue_command_ref)
@@ -575,7 +575,7 @@ menu.on_focus(forcefield_range_command_local, function()
             red,
             green,
             blue,
-            0.25
+            0.5
         )
     end)
 end)
@@ -1468,7 +1468,7 @@ players.on_join(
                     red,
                     green,
                     blue,
-                    0.25
+                    0.5
                 )
             end)
         end)
