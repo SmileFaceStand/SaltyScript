@@ -6,9 +6,18 @@ Lua Retards and Lua Masters for helping me
 Nullity for helping a lot with the Forcefield
 Nowiry for the Tall Cage
 ]]
+
 util.require_natives(1651208000)
 util.keep_running()
 util.toast("Welcome to SmileScript. Hope you'll enjoy! :)")
+
+local script_dir <const> = filesystem.scripts_dir() .. "/lib/smilescript"
+
+if not filesystem.exists(script_dir .. "/functions.lua") then
+    error("Required file not found: /lib/smilescript/functions.lua")
+end
+
+require("lib.smilescript.functions")
 
 --########################################################
 
@@ -99,76 +108,7 @@ local explosion_types <const> = {
     [83] = {"EMP Launcher"}
 }
 
-local cage_types <const> = {
-    [0] = {
-        "Standard Cage",
-        objects = {
-            {
-                name = "prop_gold_cont_01",
-                offset = v3.new(0, 0, 0),
-                rotation = v3.new(0, 0, 0)
-            }
-        },
-        max_distance = 2
-    },
-    [1] = {
-        "Tall Cage",
-        objects = {
-            {
-                name = "prop_rub_cage01a",
-                offset = v3.new(0, 0, -1),
-                rotation = v3.new(0, 0, 0)
-            },
-            {
-                name = "prop_rub_cage01a",
-                offset = v3.new(0, 0, 1.2),
-                rotation = v3.new(-180, 0, 90)
-            }
-        },
-        max_distance = 1.5
-    },
-    [2] = {
-        "Box Cage",
-        objects = {
-            {
-                name = "prop_ld_crate_01",
-                offset = v3.new(0, 0, 0),
-                rotation = v3.new(-180, 90, 0)
-            },
-            {
-                name = "prop_ld_crate_01",
-                offset = v3.new(0, 0, 0),
-                rotation = v3.new(0, 90, 0)
-            }
-        },
-        max_distance = 1.5
-    },
-    [3] = {
-        "Pipe Cage",
-        objects = {
-            {
-                name = "prop_pipes_conc_01",
-                offset = v3.new(0, 0, 0),
-                rotation = v3.new(90, 0, 0)
-            }
-        },
-        max_distance = 1.5
-    },
-    [4] = {
-        "Stunt Tube Cage",
-        objects = {
-            {
-                name = "stt_prop_stunt_tube_end",
-                offset = v3.new(0, 0, 0),
-                rotation = v3.new(0, -90, 0)
-            }
-        },
-        max_distance = 13
-    }
-}
-
 local entity_types <const> = {
-    --Spent 1 fucking day scrolling and spawning objects, if someone uses this, give credits pls
     [0] = {"Cone", name = "prop_mp_cone_01"},
     [1] = {"Pole", name = "prop_roadpole_01b"},
     [2] = {"Barrier", name = "prop_barrier_work06a"},
@@ -211,191 +151,133 @@ local entity_types <const> = {
     [42] = {"Big Soccerball", name = "stt_prop_stunt_soccer_ball"}
 }
 
+local cage_types <const> = {
+    [0] = {
+        "Standard Cage",
+        objects = {
+            {
+                name = "prop_gold_cont_01",
+                offset = v3.new(0, 0, 0),
+                rot = v3.new(0, 0, 0)
+            }
+        },
+        max_distance = 2
+    },
+    [1] = {
+        "Tall Cage",
+        objects = {
+            {
+                name = "prop_rub_cage01a",
+                offset = v3.new(0, 0, -1),
+                rot = v3.new(0, 0, 0)
+            },
+            {
+                name = "prop_rub_cage01a",
+                offset = v3.new(0, 0, 1.2),
+                rot = v3.new(-180, 0, 90)
+            }
+        },
+        max_distance = 1.5
+    },
+    [2] = {
+        "Box Cage",
+        objects = {
+            {
+                name = "prop_ld_crate_01",
+                offset = v3.new(0, 0, 0),
+                rot = v3.new(-180, 90, 0)
+            },
+            {
+                name = "prop_ld_crate_01",
+                offset = v3.new(0, 0, 0),
+                rot = v3.new(0, 90, 0)
+            }
+        },
+        max_distance = 1.5
+    },
+    [3] = {
+        "Pipe Cage",
+        objects = {
+            {
+                name = "prop_pipes_conc_01",
+                offset = v3.new(0, 0, 0),
+                rot = v3.new(90, 0, 0)
+            }
+        },
+        max_distance = 1.5
+    },
+    [4] = {
+        "Stunt Tube Cage",
+        objects = {
+            {
+                name = "stt_prop_stunt_tube_end",
+                offset = v3.new(0, 0, 0),
+                rot = v3.new(0, -90, 0)
+            }
+        },
+        max_distance = 13
+    }
+}
+
+local vehicle_types <const> = {
+    [0] = {"Faggio", name = "faggio"},
+    [1] = {"Go Kart", name = "veto"},
+    [2] = {"Zhaba", name = "zhaba"},
+    [3] = {"Buzzard", name = "buzzard2"},
+    [4] = {"Insurgent", name = "insurgent"},
+    [5] = {"Khanjali", name = "Khanjali"},
+    [6] = {"Phantom Wedge", name = "phantom2"},
+    [7] = {"Armored Boxville", name = "boxville5"},
+    [8] = {"Bus", name = "bus"},
+    [9] = {"Blimp", name = "blimp"},
+}
+
+local aura_vehicle_types <const> = {
+    [0] = {"Explode"},
+    [1] = {"Burn"},
+    [2] = {"EMP"},
+    [3] = {"Delete"}
+}
+
+local aura_ped_types <const> = {
+    [0] = {"Explode"},
+    [1] = {"Burn"},
+    [2] = {"Taze"},
+    [3] = {"Delete"}
+}
+
 local forcefield_types <const> = {
     [0] = {"Push"},
     [1] = {"Pull"}
 }
 
---#################################################
-
-  ------------------| Functions |------------------
-
---#################################################
-
-local alarm = false
-
-local function start_alarm(alarm_time)
-    alarm = false
-    local time = 0
-
-    util.create_tick_handler(function()
-        local time_elapsed = MISC.GET_FRAME_TIME() * 1000
-
-        if time >= alarm_time then
-            alarm = true
-            return false
-        else
-            time += time_elapsed
-        end
-    end)
-end
-
-local function get_alarm()
-    return alarm
-end
-
-local function get_hud_colour()
-    local red_command_ref <const> = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Red")
-    local green_command_ref <const> = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Green")
-    local blue_command_ref <const> = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Blue")
-    local alpha_command_ref <const> = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Opacity")
-    local red <const> = menu.get_value(red_command_ref)
-    local green <const> = menu.get_value(green_command_ref)
-    local blue <const> = menu.get_value(blue_command_ref)
-    local alpha <const> = menu.get_value(alpha_command_ref)
-
-    return red, green, blue, alpha
-end
-
-local function request_model(model)
-    STREAMING.REQUEST_MODEL(model)
-
-    while not STREAMING.HAS_MODEL_LOADED(model) do
-        util.yield()
-    end
-end
-
-local function request_ptfx_asset(asset)
-    STREAMING.REQUEST_NAMED_PTFX_ASSET(asset)
-
-    while not STREAMING.HAS_NAMED_PTFX_ASSET_LOADED(asset) do
-        util.yield()
-    end
-end
-
-local function wait_session_transition(yield_time)
-    yield_time = yield_time or 1000
-
-    while util.is_session_transition_active() do
-        util.yield(yield_time)
-    end
-end
-
-local function wait_player_revive(player_id, yield_time)
-    yield_time = yield_time or 250
-
-    while PLAYER.IS_PLAYER_DEAD(player_id) do
-        util.yield(yield_time)
-    end
-end
-
-local function kick_player_out_of_veh(player_id, yield_time, max_time)
-    yield_time = yield_time or 50
-    max_time = max_time or 1000
-
-    local ped_id <const> = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id)
-    local is_player_in_vehicle <const> = PED.IS_PED_IN_ANY_VEHICLE(ped_id)
-    local player_root_ref <const> = menu.player_root(player_id)
-    local kick_vehicle_command_ref <const> = menu.ref_by_rel_path(player_root_ref, "Trolling>Kick From Vehicle")
-
-    menu.trigger_command(kick_vehicle_command_ref)
-    start_alarm(max_time)
-
-    while is_player_in_vehicle do
-        local is_alarm_finished <const> = get_alarm()
-
-        if is_alarm_finished then
-            break
-        end
-
-        util.yield(yield_time)
-    end
-end
-
-local function set_entity_toward_target(entity, target)
-	local entity_pos <const> = ENTITY.GET_ENTITY_COORDS(entity, false)
-	local target_pos <const> = ENTITY.GET_ENTITY_COORDS(target, false)
-	local entity_rot = v3.lookAt(entity_pos, target_pos)
-    
-	ENTITY.SET_ENTITY_HEADING(entity, entity_rot.z)
-end
-
-local function get_vehicles_in_range(pos, range, exclude_personal_vehicles)
-    pos = pos or v3.new(0, 0, 0)
-    range = range or 16000
-    exclude_personal_vehicles = exclude_personal_vehicles or false
-
-    local all_vehicles <const> = entities.get_all_vehicles_as_pointers()
-    local vehicles = {}
-
-    for i, vehicle in pairs(all_vehicles) do
-        local vehicle_pos <const> = entities.get_position(vehicle)
-        local is_vehicle_in_range <const> = v3.distance(pos, vehicle_pos) <= range
-        local is_vehicle_personal <const> = entities.get_vehicle_has_been_owned_by_player(vehicle)
-
-        if is_vehicle_in_range and not (exclude_personal_vehicles and is_vehicle_personal) then
-            table.insert(vehicles, vehicle)
-        end
-    end
-    return vehicles
-end
-
-local function get_peds_in_range(pos, range, exclude_players)
-    pos = pos or v3.new(0, 0, 0)
-    range = range or 16000
-    exclude_players = exclude_players or false
-
-    local all_peds <const> = entities.get_all_peds_as_pointers()
-    local peds = {}
-
-    for i, ped in pairs(all_peds) do
-        local ped_pos <const> = entities.get_position(ped)
-        local is_ped_in_range <const> = v3.distance(pos, ped_pos) <= range
-        local is_ped_a_player <const> = entities.get_player_info(ped) ~= 0
-
-        if is_ped_in_range and not (exclude_players and is_ped_a_player) then
-            table.insert(peds, ped)
-        end
-    end
-    return peds
-end
-
-local function get_objects_in_range(pos, range)
-    pos = pos or v3.new(0, 0, 0)
-    range = range or 16000
-
-    local all_objects <const> = entities.get_all_objects_as_pointers()
-    local objects = {}
-
-    for i, object in pairs(all_objects) do
-        local object_pos <const> = entities.get_position(object)
-        local is_object_in_range <const> = v3.distance(pos, object_pos) <= range
-
-        if is_object_in_range then
-            table.insert(objects, object)
-        end
-    end
-    return objects
-end
-
-
-local function get_pickups_in_range(pos, range)
-    pos = pos or v3.new(0, 0, 0)
-    range = range or 16000
-
-    local all_pickups <const> = entities.get_all_pickups_as_pointers()
-    local pickups = {}
-
-    for i, pickup in pairs(all_pickups) do
-        local pickup_pos <const> = entities.get_position(pickup)
-        local is_pickup_in_range <const> = v3.distance(pos, pickup_pos) <= range
-
-        if is_pickup_in_range then
-            table.insert(pickups, pickup)
-        end
-    end
-    return pickups
-end
+local fake_pickup_types <const> = {
+    [0] = {
+        "Money Bag",
+        objects = {
+            "p_poly_bag_01_s"
+        }
+    },
+    [1] = {
+        "Action Figure",
+        objects = {
+            "vw_prop_vw_colle_alien",
+            "vw_prop_vw_colle_beast",
+            "vw_prop_vw_colle_imporage",
+            "vw_prop_vw_colle_pogo",
+            "vw_prop_vw_colle_prbubble",
+            "vw_prop_vw_colle_rsrcomm",
+            "vw_prop_vw_colle_rsrgeneric",
+            "vw_prop_vw_colle_sasquatch"
+        }
+    },
+    [2] = {
+        "P's & Q's",
+        objects = {
+            "prop_choc_pq"
+        }
+    },
+}
 
 --########################################################
 
@@ -403,22 +285,33 @@ end
 
 --########################################################
 
+local local_lists <const> = {
+    ["Self"] = menu.list(menu.my_root(), "Self"),
+    ["World"] = menu.list(menu.my_root(), "World")
+}
+
+menu.divider(local_lists["Self"], "Self")
+menu.divider(local_lists["World"], "World")
+
+local local_sub_lists <const> = {
+    ["Weapons"] = menu.list(local_lists["Self"], "Weapons"),
+    ["Aura"] = menu.list(local_lists["Self"], "Aura"),
+    ["Forcefield"] = menu.list(local_lists["Self"], "Forcefield"),
+    ["Clear World"] = menu.list(local_lists["World"], "Clear World")
+}
+
 ------------------------------
 -- Self Section
 ------------------------------
-
-local self_local_list = menu.list(menu.my_root(), "Self")
-menu.divider(self_local_list, "Self")
 
 ------------------------------
 -- Weapons Menu
 ------------------------------
 
-local wpns_local_list = menu.list(self_local_list, "Weapons")
-menu.divider(wpns_local_list, "Weapons")
+menu.divider(local_sub_lists["Weapons"], "Weapons")
 
 menu.toggle(
-    wpns_local_list,
+    local_sub_lists["Weapons"],
     "Autoload Weapons",
     {"autoloadweapons"},
     "Autoload all the weapons everytime you join a new session.",
@@ -442,6 +335,202 @@ menu.toggle(
 )
 
 ------------------------------
+-- Aura Menu
+------------------------------
+
+local aura = {
+    is_enabled = false,
+    range = 20,
+    range_command_on_focus = false,
+    vehicle_type = 0,
+    ped_type = 0,
+    ignore_vehicles = false,
+    ignore_peds = false,
+    ignore_player_vehicles = false
+}
+
+menu.divider(local_sub_lists["Aura"], "Aura")
+
+menu.toggle(
+    local_sub_lists["Aura"],
+    "Aura",
+    {"aura"},
+    "",
+    function(state)
+        aura.is_enabled = state
+
+        while aura.is_enabled do
+            local targets = {}
+            local player_pos <const> = players.get_position(players.user())
+
+            if not aura.ignore_vehicles then
+                local vehicles <const> = get_vehicles_in_range(player_pos, aura.range, aura.ignore_player_vehicles)
+
+                for i = 1, #vehicles do
+                    table.insert(targets, vehicles[i])
+                end
+            end
+
+            if not aura.ignore_peds then
+                local peds <const> = get_peds_in_range(player_pos, aura.range, true)
+
+                for i = 1, #peds do
+                    table.insert(targets, peds[i])
+                end
+            end
+
+            for i, target in pairs(targets) do
+                target = entities.pointer_to_handle(target)
+                local target_pos <const> = ENTITY.GET_ENTITY_COORDS(target, false)
+                local entity_type <const> = ENTITY.GET_ENTITY_TYPE(target)
+                local player_ped <const> = players.user_ped()
+                local is_target_player <const> = player_ped == target
+                local is_target_player_vehicle <const> = PED.GET_VEHICLE_PED_IS_IN(player_ped, true) == target
+                local is_entity_a_vehicle <const> = entity_type == 2
+                local is_entity_a_ped <const> = entity_type == 1
+                local is_entity_dead <const> = ENTITY.IS_ENTITY_DEAD(target, false)
+                local is_ped_in_vehicle <const> = PED.IS_PED_IN_ANY_VEHICLE(target, false)
+
+                if is_entity_a_vehicle and not is_target_player_vehicle then
+                    local vehicle_health <const> = VEHICLE.GET_VEHICLE_ENGINE_HEALTH(target)
+                    local is_vehicle_engine_burning <const> = vehicle_health <= 0
+                    local is_vehicle_engine_running <const> = VEHICLE.GET_IS_VEHICLE_ENGINE_RUNNING(target)
+
+                    if aura.vehicle_type == 0 and not is_entity_dead then
+                        FIRE.ADD_EXPLOSION(target_pos.x, target_pos.y, target_pos.z, 0, 1, true, false, 1, false)
+                    elseif aura.vehicle_type == 1 and not is_vehicle_engine_burning and not is_entity_dead then
+                        NETWORK.NETWORK_REQUEST_CONTROL_OF_ENTITY(target)
+                        VEHICLE.SET_VEHICLE_ENGINE_HEALTH(target, -80)
+                    elseif aura.vehicle_type == 2 and is_vehicle_engine_running then
+                        FIRE.ADD_EXPLOSION(
+                            target_pos.x, target_pos.y, target_pos.z,
+                            65, 1, false, true, 0, false
+                        )
+                    elseif (aura.vehicle_type == 3) then
+                        entities.delete_by_handle(target)
+                    end
+                end
+
+                if is_entity_a_ped and not is_ped_in_vehicle and not is_target_player then
+                    local is_ped_burning <const> = FIRE.IS_ENTITY_ON_FIRE(target)
+                    local is_ped_stunned <const> = PED.IS_PED_BEING_STUNNED(target, false)
+                    local stungun_hash <const> = util.joaat("weapon_stungun")
+
+                    if aura.ped_type == 0 and not is_entity_dead then
+                        FIRE.ADD_EXPLOSION(target_pos.x, target_pos.y, target_pos.z, 0, 1, true, false, 1, false)
+                    elseif aura.ped_type == 1 and not is_entity_dead and not is_ped_burning then
+                        NETWORK.NETWORK_REQUEST_CONTROL_OF_ENTITY(target)
+                        FIRE.START_ENTITY_FIRE(target)
+                    elseif aura.ped_type == 2 and not is_entity_dead and not is_ped_stunned then
+                        MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS(
+                            target_pos.x, target_pos.y, target_pos.z + 1,
+                            target_pos.x, target_pos.y, target_pos.z,
+                            0, 0, stungun_hash, players.user(), false, true, 1
+                        )
+                    elseif aura.ped_type == 3 then
+                        entities.delete_by_handle(target)
+                    end
+                end
+            end
+            util.yield(10)
+        end
+    end
+)
+
+local aura_range_command_local = menu.slider(
+    local_sub_lists["Aura"],
+    "Aura Range",
+    {"aurarange"},
+    "",
+    5,
+    100,
+    20,
+    5,
+    function(value)
+        aura.range = value
+    end
+)
+
+menu.on_focus(aura_range_command_local, function()
+    aura.range_command_on_focus = true
+
+    util.create_tick_handler(function()
+        local player_pos <const> = players.get_position(players.user())
+        local red <const>, green <const>, blue <const> = get_hud_colour()
+
+        if not aura.range_command_on_focus then
+            return false
+        end
+
+        GRAPHICS._DRAW_SPHERE(
+            player_pos.x, player_pos.y, player_pos.z,
+            aura.range,
+            red, green, blue, 0.5
+        )
+    end)
+end)
+
+menu.on_blur(aura_range_command_local, function()
+    aura.range_command_on_focus = false
+end)
+
+menu.list_select(
+    local_sub_lists["Aura"],
+    "Aura Vehicle Type",
+    {"auravehicletype"},
+    "",
+    aura_vehicle_types,
+    0,
+    function(value)
+        aura.vehicle_type = value
+    end
+)
+
+menu.list_select(
+    local_sub_lists["Aura"],
+    "Aura Ped Type",
+    {"aurapedtype"},
+    "",
+    aura_ped_types,
+    0,
+    function(value)
+        aura.ped_type = value
+    end
+)
+
+local aura_ignores_local_list <const> = menu.list(local_sub_lists["Aura"], "Aura Ignores")
+
+menu.toggle(
+    aura_ignores_local_list,
+    "Ignore Vehicles",
+    {"auranovehicles"},
+    "",
+    function(state)
+        aura.ignore_vehicles = state
+    end
+)
+
+menu.toggle(
+    aura_ignores_local_list,
+    "Ignore Peds",
+    {"auranopeds"},
+    "",
+    function(state)
+        aura.ignore_peds = state
+    end
+)
+
+menu.toggle(
+    aura_ignores_local_list,
+    "Ignore Player Vehicles",
+    {"auranoplayervehicles"},
+    "",
+    function(state)
+        aura.ignore_player_vehicles = state
+    end
+)
+
+------------------------------
 -- Forcefield Menu
 ------------------------------
 
@@ -453,96 +542,82 @@ local forcefield = {
     type = 0,
     ignore_vehicles = false,
     ignore_peds = false,
-    ignore_personal_vehicles = true
+    ignore_player_vehicles = false
 }
 
-local forcefield_local_list = menu.list(self_local_list, "Forcefield")
-menu.divider(forcefield_local_list, "Forcefield")
+menu.divider(local_sub_lists["Forcefield"], "Forcefield")
 
 menu.toggle(
-    forcefield_local_list,
+    local_sub_lists["Forcefield"],
     "Forcefield",
     {"forcefield"},
     "",
     function(state)
         forcefield.is_enabled = state
-        if state then
-            while forcefield.is_enabled do
-                local targets = {}
-                local player_id <const> = players.user()
-                local player_pos <const> = players.get_position(player_id)
+
+        while forcefield.is_enabled do
+            local targets = {}
+            local player_id <const> = players.user()
+            local player_pos <const> = players.get_position(player_id)
+
+            if not forcefield.ignore_vehicles then
+                local vehicles <const> = get_vehicles_in_range(player_pos, forcefield.range, forcefield.ignore_player_vehicles)
+
+                for i = 1, #vehicles do
+                    table.insert(targets, vehicles[i])
+                end
+            end
+
+            if not forcefield.ignore_peds then
+                local peds <const> = get_peds_in_range(player_pos, forcefield.range, true)
+
+                for i = 1, #peds do
+                    table.insert(targets, peds[i])
+                end
+            end
+
+            for i, target in pairs(targets) do
+                target = entities.pointer_to_handle(target)
                 local player_ped <const> = players.user_ped()
+                local is_target_my_vehicle <const> = PED.GET_VEHICLE_PED_IS_IN(player_ped, true) == target
+                local is_control_given <const> = NETWORK.NETWORK_REQUEST_CONTROL_OF_ENTITY(target)
+                local is_forcefield_negative <const> = forcefield.type == 1
+                local entity_type <const> = ENTITY.GET_ENTITY_TYPE(target)
+                local is_entity_a_ped <const> = entity_type == 1
 
-                if not forcefield.ignore_vehicles then
-                    local vehicles <const> = get_vehicles_in_range(player_pos, forcefield.range, forcefield.ignore_personal_vehicles)
+                if not is_target_my_vehicle and is_control_given then
+                    local force = ENTITY.GET_ENTITY_COORDS(target)
 
-                    for i = 1, #vehicles do
-                        table.insert(targets, vehicles[i])
+                    v3.sub(force, player_pos)
+                    v3.normalise(force)
+                    v3.mul(force, forcefield.multiplier)
+
+                    if is_forcefield_negative then
+                        v3.mul(force, -1)
                     end
-                end
 
-                if not forcefield.ignore_peds then
-                    local peds <const> = get_peds_in_range(player_pos, forcefield.range, true)
-
-                    for i = 1, #peds do
-                        table.insert(targets, peds[i])
-                    end
-                end
-
-                for i, target in pairs(targets) do
-                    target = entities.pointer_to_handle(target)
-                    local is_target_my_vehicle <const> = PED.GET_VEHICLE_PED_IS_IN(player_ped, false) == target
-                    local is_control_given <const> = NETWORK.NETWORK_REQUEST_CONTROL_OF_ENTITY(target)
-                    local is_forcefield_negative <const> = forcefield.type == 1
-                    local is_entity_a_ped <const> = ENTITY.GET_ENTITY_TYPE(target) == 1
-
-                    if not is_target_my_vehicle and is_control_given then
-                        local force = ENTITY.GET_ENTITY_COORDS(target)
-
-                        v3.sub(force, player_pos)
-                        v3.normalise(force)
-                        v3.mul(force, forcefield.multiplier)
-
-                        if is_forcefield_negative then
-                            v3.mul(force, -1)
-                        end
-
-                        if is_entity_a_ped then
-                            PED.SET_PED_TO_RAGDOLL(
-                                target,
-                                500,
-                                0,
-                                0,
-                                false,
-                                false,
-                                false
-                            )
-                        end
-
-                        ENTITY.APPLY_FORCE_TO_ENTITY(
-                            target,
-                            3,
-                            force.x,
-                            force.y,
-                            force.z,
-                            0,
-                            0,
-                            0.5,
-                            0,
-                            false,
-                            false,
-                            true
+                    if is_entity_a_ped then
+                        PED.SET_PED_TO_RAGDOLL(
+                            target, 500, 0, 0,
+                            false, false, false
                         )
                     end
+
+                    ENTITY.APPLY_FORCE_TO_ENTITY(
+                        target, 3,
+                        force.x, force.y, force.z,
+                        0, 0, 0.5, 0,
+                        false, false, true, false, false
+                    )
                 end
-                util.yield(10)
             end
+            util.yield(10)
         end
     end
 )
 
 local forcefield_range_command_local = menu.slider(
-    forcefield_local_list,
+    local_sub_lists["Forcefield"],
     "Forcefield Range",
     {"forcefieldrange"},
     "",
@@ -568,14 +643,9 @@ menu.on_focus(forcefield_range_command_local, function()
         end
 
         GRAPHICS._DRAW_SPHERE(
-            player_pos.x,
-            player_pos.y,
-            player_pos.z,
+            player_pos.x, player_pos.y, player_pos.z,
             forcefield.range,
-            red,
-            green,
-            blue,
-            0.5
+            red, green, blue, 0.5
         )
     end)
 end)
@@ -584,22 +654,22 @@ menu.on_blur(forcefield_range_command_local, function()
     forcefield.range_command_on_focus = false
 end)
 
-menu.slider(
-    forcefield_local_list,
+menu.slider_float(
+    local_sub_lists["Forcefield"],
     "Forcefield Multiplier",
     {"forcefieldmultiplier"},
     "",
-    1,
     10,
-    1,
-    1,
+    1000,
+    100,
+    10,
     function(value)
-        forcefield.multiplier = value * 0.5
+        forcefield.multiplier = value * 0.01
     end
 )
 
 menu.list_select(
-    forcefield_local_list,
+    local_sub_lists["Forcefield"],
     "Forcefield Type",
     {"forcefieldtype"},
     "",
@@ -610,7 +680,7 @@ menu.list_select(
     end
 )
 
-local forcefield_ignores_local_list = menu.list(forcefield_local_list, "Forcefield Ignores")
+local forcefield_ignores_local_list <const> = menu.list(local_sub_lists["Forcefield"], "Forcefield Ignores")
 menu.divider(forcefield_ignores_local_list, "Forcefield Ignores")
 
 menu.toggle(
@@ -635,21 +705,17 @@ menu.toggle(
 
 menu.toggle(
     forcefield_ignores_local_list,
-    "Ignore Personal Vehicles",
-    {"forcefieldnopersonalvehicles"},
+    "Ignore Player Vehicles",
+    {"forcefieldnoplayervehicles"},
     "",
     function(state)
-        forcefield.ignore_personal_vehicles = state
-    end,
-    true
+        forcefield.ignore_player_vehicles = state
+    end
 )
 
 ------------------------------
 -- World Section
 ------------------------------
-
-local world_local_list = menu.list(menu.my_root(), "World")
-menu.divider(world_local_list, "World")
 
 ------------------------------
 -- Clear World Menu
@@ -660,14 +726,13 @@ local clear_world = {
     peds = true,
     objects = true,
     pickups = true,
-    ignore_personal_vehicles = true
+    ignore_player_vehicles = true
 }
 
-local clr_world_local_list = menu.list(world_local_list, "Clear World")
-menu.divider(clr_world_local_list, "Clear World")
+menu.divider(local_sub_lists["Clear World"], "Clear World")
 
 menu.action(
-    clr_world_local_list,
+    local_sub_lists["Clear World"],
     "Clear World",
     {"clearworld"},
     "",
@@ -677,7 +742,7 @@ menu.action(
         if is_in_session then
             local count = 0
             if clear_world.vehicles then
-                local vehicles <const> = get_vehicles_in_range(nil, nil, clear_world.exclude_personal_vehicles)
+                local vehicles <const> = get_vehicles_in_range(nil, nil, clear_world.exclude_player_vehicles)
 
                 for i, vehicle in pairs(vehicles) do
                     entities.delete_by_pointer(vehicle)
@@ -715,7 +780,7 @@ menu.action(
 end)
 
 menu.toggle(
-    clr_world_local_list,
+    local_sub_lists["Clear World"],
     "Clear Vehicles",
     {"clearvehicles"},
     "",
@@ -726,7 +791,7 @@ menu.toggle(
 )
 
 menu.toggle(
-    clr_world_local_list,
+    local_sub_lists["Clear World"],
     "Clear Peds",
     {"clearpeds"},
     "",
@@ -737,7 +802,7 @@ menu.toggle(
 )
 
 menu.toggle(
-    clr_world_local_list,
+    local_sub_lists["Clear World"],
     "Clear Objects",
     {"clearobjects"},
     "",
@@ -748,7 +813,7 @@ menu.toggle(
 )
 
 menu.toggle(
-    clr_world_local_list,
+    local_sub_lists["Clear World"],
     "Clear Pickups",
     {"clearpickups"},
     "",
@@ -759,12 +824,12 @@ menu.toggle(
 )
 
 menu.toggle(
-    clr_world_local_list,
-    "Ignore Personal Vehicles",
-    {"clearnopersonalvehicles"},
+    local_sub_lists["Clear World"],
+    "Ignore Player Vehicles",
+    {"clearnoplayervehicles"},
     "",
     function(state)
-        clear_world.ignore_personal_vehicles = state
+        clear_world.ignore_player_vehicles = state
     end,
     true
 )
@@ -779,24 +844,24 @@ players.on_join(
     function(player_id)
         menu.divider(menu.player_root(player_id), "SmileScript")
 
+        local trolling_net_list <const> = menu.list(menu.player_root(player_id), "Trolling")
+        menu.divider(trolling_net_list, "Trolling")
+
         ------------------------------
         -- Trolling Section
         ------------------------------
-
-        local trolling_net_list = menu.list(menu.player_root(player_id), "Trolling")
-        menu.divider(trolling_net_list, "Trolling")
-        local explosions_net_list = menu.list(trolling_net_list, "Explosions")
-        menu.divider(explosions_net_list, "Explosions")
-        local particles_net_list = menu.list(trolling_net_list, "Particles")
-        menu.divider(particles_net_list, "Particles")
-        local entities_net_list = menu.list(trolling_net_list, "Entities")
-        menu.divider(entities_net_list, "Entities")
-        local cages_net_list = menu.list(trolling_net_list, "Cages")
-        menu.divider(cages_net_list, "Cages")
-        local forcefield_net_list = menu.list(trolling_net_list, "Forcefield")
-        menu.divider(forcefield_net_list, "Forcefield")
-        local drop_vehicle_net_list = menu.list(trolling_net_list, "Drop Vehicle")
-        menu.divider(drop_vehicle_net_list, "Drop Vehicle")
+ 
+        local net_lists <const> = {
+            ["Explosions"] = menu.list(trolling_net_list, "Explosions"),
+            ["Particles"] = menu.list(trolling_net_list, "Particles"),
+            ["Objects"] = menu.list(trolling_net_list, "Objects"),
+            ["Cages"] = menu.list(trolling_net_list, "Cages"),
+            ["Crush"] = menu.list(trolling_net_list, "Crush"),
+            ["Ram"] = menu.list(trolling_net_list, "Ram"),
+            ["Aura"] = menu.list(trolling_net_list, "Aura"),
+            ["Forcefield"] = menu.list(trolling_net_list, "Forcefield"),
+            ["Fake Pickup"] = menu.list(trolling_net_list, "Fake Pickup")
+        }
 
         menu.click_slider(
             trolling_net_list,
@@ -849,6 +914,7 @@ players.on_join(
         ------------------------------
 
         local explosion = {
+            loop = false,
             delay = 100,
             shake = 1,
             blamed = false,
@@ -863,33 +929,21 @@ players.on_join(
 
             if explosion.blamed then
                 FIRE.ADD_OWNED_EXPLOSION(
-                    my_player_ped,
-                    player_pos.x,
-                    player_pos.y,
-                    player_pos.z,
-                    explosion.type,
-                    1,
-                    explosion.audible,
-                    not explosion.visible,
-                    explosion.shake
+                    my_player_ped, player_pos.x, player_pos.y, player_pos.z,
+                    explosion.type, 1, explosion.audible, not explosion.visible, explosion.shake
                 )
             else
                 FIRE.ADD_EXPLOSION(
-                    player_pos.x,
-                    player_pos.y,
-                    player_pos.z,
-                    explosion.type,
-                    1,
-                    explosion.audible,
-                    not explosion.visible,
-                    explosion.shake,
-                    not explosion.damage
+                    player_pos.x, player_pos.y, player_pos.z,
+                    explosion.type, 1, explosion.audible, not explosion.visible, explosion.shake, not explosion.damage
                 )
             end
         end
 
+        menu.divider(net_lists["Explosions"], "Explosions")
+
         menu.action(
-            explosions_net_list,
+            net_lists["Explosions"],
             "Explode",
             {"ssexplode"},
             "",
@@ -898,19 +952,23 @@ players.on_join(
             end
         )
 
-        menu.toggle_loop(
-            explosions_net_list,
+        menu.toggle(
+            net_lists["Explosions"],
             "Explode Loop",
             {"explodeloop"},
             "",
-            function()
-                add_explosion()
-                util.yield(explosion.delay)
+            function(state)
+                explosion.loop = state
+
+                while explosion.loop do
+                    add_explosion()
+                    util.yield(explosion.delay)
+                end
             end
         )
 
         menu.list_select(
-            explosions_net_list,
+            net_lists["Explosions"],
             "Explosion Type",
             {"explosiontype"},
             "",
@@ -921,7 +979,7 @@ players.on_join(
             end
         )
 
-        local explosion_other_net_list = menu.list(explosions_net_list, "Other Settings")
+        local explosion_other_net_list <const> = menu.list(net_lists["Explosions"], "Other Settings")
         menu.divider(explosion_other_net_list, "Other Settings")
 
         menu.slider(
@@ -944,7 +1002,7 @@ players.on_join(
             {"explosionshake"},
             "",
             0,
-            100,
+            10,
             1,
             1,
             function(value)
@@ -1001,7 +1059,7 @@ players.on_join(
 
         local ptfx = {
             ids = {},
-            power = 1,
+            amount = 1,
             size = 5,
             asset = "core",
             name = "exp_grd_grenade_smoke"
@@ -1011,23 +1069,16 @@ players.on_join(
             local player_ped <const> = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id)
 
             request_ptfx_asset(ptfx.asset)
-            GRAPHICS.USE_PARTICLE_FX_ASSET(ptfx.asset)
 
-            for i = 1, ptfx.power, 1 do
+            for i = 1, ptfx.amount do
+                GRAPHICS.USE_PARTICLE_FX_ASSET(ptfx.asset)
+
                 local ptfx_id <const> = GRAPHICS.START_NETWORKED_PARTICLE_FX_LOOPED_ON_ENTITY(
-                    ptfx.name,
-                    player_ped,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
+                    ptfx.name, player_ped,
+                    0, 0, 0,
+                    0, 0, 0,
                     ptfx.size,
-                    false,
-                    false,
-                    false
-
+                    false, false, false
                 )
 
                 table.insert(ptfx.ids, ptfx_id)
@@ -1040,14 +1091,17 @@ players.on_join(
             end
         end
 
+        menu.divider(net_lists["Particles"], "Particles")
+
         menu.toggle(
-            particles_net_list,
+            net_lists["Particles"],
             "Start PTFX",
             {"ptfx"},
             "",
             function(state)
                 if state then
                     start_ptfx()
+
                     while state do
                         local is_player_dead <const> = PLAYER.IS_PLAYER_DEAD(player_id)
 
@@ -1066,7 +1120,7 @@ players.on_join(
         )
 
         menu.slider(
-            particles_net_list,
+            net_lists["Particles"],
             "PTFX Amount",
             {"ptfxamount"},
             "",
@@ -1075,12 +1129,12 @@ players.on_join(
             1,
             1,
             function(value)
-                ptfx.power = value
+                ptfx.amount = value
             end
         )
 
         menu.slider(
-            particles_net_list,
+            net_lists["Particles"],
             "PTFX Size",
             {"ptfxsize"},
             "",
@@ -1093,7 +1147,7 @@ players.on_join(
             end
         )
 
-        local particles_other_net_list = menu.list(particles_net_list, "Other Settings")
+        local particles_other_net_list <const> = menu.list(net_lists["Particles"], "Other Settings")
         menu.divider(particles_other_net_list, "Other Settings")
 
         menu.text_input(
@@ -1134,10 +1188,12 @@ players.on_join(
             amount = 1
         }
 
+        menu.divider(net_lists["Objects"], "Objects")
+
         menu.action(
-            entities_net_list,
-            "Spawn Entities",
-            {"spamentities"},
+            net_lists["Objects"],
+            "Spawn Objects",
+            {"spawnobjects"},
             "",
             function()
                 local entity_name <const> = entity_types[entity.type].name
@@ -1147,40 +1203,32 @@ players.on_join(
                 request_model(entity_hash)
 
                 for i = 1, entity.amount, 1 do
-                    local offset <const> = v3.new(math.random(-1, 1) * 0.25, math.random(-1, 1) * 0.25, math.random(-1, 1) * 0.25)
+                    local offset <const> = v3.new(
+                        math.random(-1, 1) * 0.25,
+                        math.random(-1, 1) * 0.25,
+                        math.random(-1, 1) * 0.25
+                    )
                     local entity_pos <const> = player_pos
 
                     v3.add(entity_pos, offset)
 
                     OBJECT.CREATE_OBJECT_NO_OFFSET(
-                        entity_hash,
-                        entity_pos.x,
-                        entity_pos.y,
-                        entity_pos.z,
-                        true,
-                        false,
-                        false
+                        entity_hash, entity_pos.x, entity_pos.y, entity_pos.z,
+                        true, false, false
                     )
                 end
 
                 FIRE.ADD_EXPLOSION(
-                    player_pos.x,
-                    player_pos.y,
-                    player_pos.z,
-                    18,
-                    1,
-                    false,
-                    true,
-                    0,
-                    true
+                    player_pos.x, player_pos.y, player_pos.z,
+                    18, 1, false, true, 0, true
                 )
             end
         )
 
         menu.slider(
-            entities_net_list,
-            "Entity Amount",
-            {"entitiesamount"},
+            net_lists["Objects"],
+            "Object Amount",
+            {"objectamount"},
             "",
             1,
             50,
@@ -1192,9 +1240,9 @@ players.on_join(
         )
 
         menu.list_select(
-            entities_net_list,
-            "Entity Type",
-            {"entitytype"},
+            net_lists["Objects"],
+            "Object Type",
+            {"objecttype"},
             "",
             entity_types,
             0,
@@ -1244,7 +1292,7 @@ players.on_join(
                 local cage_object <const> = entities.create_object(cage_hash, entity_pos)
 
                 table.insert(cage.ids, cage_object)
-                ENTITY.SET_ENTITY_ROTATION(cage_object, object.rotation.x, object.rotation.y, object.rotation.z, 1, true)
+                ENTITY.SET_ENTITY_ROTATION(cage_object, object.rot.x, object.rot.y, object.rot.z, 1, true)
                 ENTITY.FREEZE_ENTITY_POSITION(cage_object, true)
                 ENTITY.SET_ENTITY_VISIBLE(cage_object, cage.visible, false)
                 STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(cage_hash)
@@ -1267,8 +1315,10 @@ players.on_join(
             end
         end
 
+        menu.divider(net_lists["Cages"], "Cages")
+
         menu.toggle(
-            cages_net_list,
+            net_lists["Cages"],
             "Cage",
             {"cage"},
             "",
@@ -1284,12 +1334,13 @@ players.on_join(
         )
 
         menu.toggle(
-            cages_net_list,
+            net_lists["Cages"],
             "Automatic Cage",
             {"automaticcage"},
             "Automatically re-cage the player if he leaves the cage.",
             function(state)
                 cage.automatic = state
+
                 if state then
                     add_cage()
 
@@ -1319,7 +1370,7 @@ players.on_join(
         )
 
         menu.list_select(
-            cages_net_list,
+            net_lists["Cages"],
             "Cage Type",
             {"cagetype"},
             "",
@@ -1331,7 +1382,7 @@ players.on_join(
         )
 
         menu.toggle(
-            cages_net_list,
+            net_lists["Cages"],
             "Cage Visible",
             {"cagevisible"},
             "",
@@ -1339,6 +1390,454 @@ players.on_join(
                 cage.visible = state
             end,
             true
+        )
+
+        ------------------------------
+        -- Crush Menu
+        ------------------------------
+
+        local crush = {
+            loop = false,
+            speed = 270,
+            vehicle_type = 0,
+            delay = 250,
+            height = 10,
+            visible = true
+        }
+
+        local function _crush()
+            local vehicle_type <const> = vehicle_types[crush.vehicle_type]
+            local vehicle_name <const> = vehicle_type.name
+            local vehicle_hash <const> = util.joaat(vehicle_name)
+            local player_pos <const> = players.get_position(player_id)
+            local vehicle_pos <const> = v3.new(player_pos.x, player_pos.y, player_pos.z + crush.height)
+
+            request_model(vehicle_hash)
+
+            local vehicle <const> = entities.create_vehicle(vehicle_hash, vehicle_pos, 0)
+
+            if not crush.visible then
+                ENTITY.SET_ENTITY_VISIBLE(vehicle, false, false)
+            end
+
+            ENTITY.SET_ENTITY_VELOCITY(vehicle, 0, 0, -crush.speed * 3.6)
+        end
+
+        menu.divider(net_lists["Crush"], "Crush")
+
+        menu.action(
+            net_lists["Crush"],
+            "Crush",
+            {"crush"},
+            "",
+            function()
+                _crush()
+            end
+        )
+
+        menu.toggle(
+            net_lists["Crush"],
+            "Crush Loop",
+            {"crushloop"},
+            "",
+            function(state)
+                crush.loop = state
+
+                while crush.loop do
+                    _crush()
+                    util.yield(crush.delay)
+                end
+            end
+        )
+
+        menu.slider(
+            net_lists["Crush"],
+            "Crush Speed",
+            {"crushspeed"},
+            "",
+            1,
+            540,
+            270,
+            20,
+            function(value)
+                crush.speed = value
+            end
+        )
+
+        menu.list_select(
+            net_lists["Crush"],
+            "Crush Vehicle",
+            {"vehicletype"},
+            "",
+            vehicle_types,
+            0,
+            function(value)
+                crush.vehicle_type = value
+            end
+        )
+
+        local crush_other_net_list <const> = menu.list(net_lists["Crush"], "Other Settings")
+
+        menu.slider(
+            crush_other_net_list,
+            "Crush Delay",
+            {"crushdelay"},
+            "",
+            50,
+            1000,
+            250,
+            50,
+            function(value)
+                crush.delay = value
+            end
+        )
+
+        menu.slider(
+            crush_other_net_list,
+            "Crush Height",
+            {"crushheight"},
+            "",
+            5,
+            50,
+            10,
+            1,
+            function(value)
+                crush.height = value
+            end
+        )
+
+        menu.toggle(
+            crush_other_net_list,
+            "Crush Visible",
+            {"crushvisible"},
+            "",
+            function(state)
+                crush.visible = state
+            end,
+            true
+        )
+
+        ------------------------------
+        -- Ram Menu
+        ------------------------------
+
+        local ram = {
+            loop = false,
+            speed = 540,
+            vehicle_type = 0,
+            delay = 250,
+            distance = 5,
+            visible = true
+        }
+
+        local function _ram()
+            local vehicle_type <const> = vehicle_types[ram.vehicle_type]
+            local vehicle_name <const> = vehicle_type.name
+            local vehicle_hash <const> = util.joaat(vehicle_name)
+            local player_pos <const> = players.get_position(player_id)
+            local vehicle_pos <const> = get_random_pos_on_radius(player_pos, ram.distance)
+            local heading <const> = v3.lookAt(vehicle_pos, player_pos).z
+
+            request_model(vehicle_hash)
+
+            local vehicle <const> = entities.create_vehicle(vehicle_hash, vehicle_pos, heading)
+
+            if not ram.visible then
+                ENTITY.SET_ENTITY_VISIBLE(vehicle, false, false)
+            end
+
+            VEHICLE.SET_VEHICLE_FORWARD_SPEED(vehicle, ram.speed / 3.6)
+        end
+
+        menu.divider(net_lists["Ram"], "Ram")
+
+        menu.action(
+            net_lists["Ram"],
+            "Ram",
+            {"ram"},
+            "",
+            function()
+                _ram()
+            end
+        )
+
+        menu.toggle(
+            net_lists["Ram"],
+            "Ram Loop",
+            {"ramloop"},
+            "",
+            function(state)
+                ram.loop = state
+
+                while ram.loop do
+                    _ram()
+                    util.yield(ram.delay)
+                end
+            end
+        )
+
+        menu.slider(
+            net_lists["Ram"],
+            "Ram Speed",
+            {"ramspeed"},
+            "",
+            1,
+            540,
+            270,
+            20,
+            function(value)
+                ram.speed = value
+            end
+        )
+
+        menu.list_select(
+            net_lists["Ram"],
+            "Ram Vehicle",
+            {"ramtype"},
+            "",
+            vehicle_types,
+            0,
+            function(value)
+                ram.vehicle_type = value
+            end
+        )
+
+        local ram_other_net_list <const> = menu.list(net_lists["Ram"], "Other Settings")
+
+        menu.slider(
+            ram_other_net_list,
+            "Ram Delay",
+            {"ramdelay"},
+            "",
+            50,
+            1000,
+            250,
+            50,
+            function(value)
+                crush.delay = value
+            end
+        )
+
+        menu.slider(
+            ram_other_net_list,
+            "Ram Distance",
+            {"ramdistance"},
+            "",
+            5,
+            50,
+            10,
+            1,
+            function(value)
+                ram.distance = value
+            end
+        )
+
+        menu.toggle(
+            ram_other_net_list,
+            "Ram Visible",
+            {"ramvisible"},
+            "",
+            function(state)
+                ram.visible = state
+            end,
+            true
+        )
+
+        ------------------------------
+        -- Net Aura Menu
+        ------------------------------
+
+        local net_aura = {
+            is_enabled = false,
+            range = 20,
+            range_command_on_focus = false,
+            vehicle_type = 0,
+            ped_type = 0,
+            ignore_vehicles = false,
+            ignore_peds = false,
+            ignore_player_vehicles = false
+        }
+
+        menu.divider(net_lists["Aura"], "Aura")
+
+        menu.toggle(
+            net_lists["Aura"],
+            "Aura",
+            {"netaura"},
+            "",
+            function(state)
+                net_aura.is_enabled = state
+
+                while net_aura.is_enabled do
+                    local targets = {}
+                    local player_pos <const> = players.get_position(player_id)
+
+                    if not net_aura.ignore_vehicles then
+                        local vehicles <const> = get_vehicles_in_range(player_pos, net_aura.range, net_aura.ignore_player_vehicles)
+
+                        for i = 1, #vehicles do
+                            table.insert(targets, vehicles[i])
+                        end
+                    end
+
+                    if not net_aura.ignore_peds then
+                        local peds <const> = get_peds_in_range(player_pos, net_aura.range, true)
+
+                        for i = 1, #peds do
+                            table.insert(targets, peds[i])
+                        end
+                    end
+
+                    for i, target in pairs(targets) do
+                        target = entities.pointer_to_handle(target)
+                        local target_pos <const> = ENTITY.GET_ENTITY_COORDS(target, false)
+                        local target_type <const> = ENTITY.GET_ENTITY_TYPE(target)
+                        local player_ped <const> = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id)
+                        local is_target_player <const> = player_ped == target
+                        local is_target_player_vehicle <const> = PED.GET_VEHICLE_PED_IS_IN(player_ped, true) == target
+                        local is_target_a_vehicle <const> = target_type == 2
+                        local is_target_a_ped <const> = target_type == 1
+                        local is_target_dead <const> = ENTITY.IS_ENTITY_DEAD(target, false)
+                        local is_ped_in_vehicle <const> = PED.IS_PED_IN_ANY_VEHICLE(target, false)
+
+                        if is_target_a_vehicle and not is_target_player_vehicle then
+                            local vehicle_health <const> = VEHICLE.GET_VEHICLE_ENGINE_HEALTH(target)
+                            local is_vehicle_engine_burning <const> = vehicle_health <= 0
+                            local is_vehicle_engine_running <const> = VEHICLE.GET_IS_VEHICLE_ENGINE_RUNNING(target)
+
+                            if net_aura.vehicle_type == 0 and not is_target_dead then
+                                FIRE.ADD_EXPLOSION(target_pos.x, target_pos.y, target_pos.z, 0, 1, true, false, 1, false)
+                            elseif net_aura.vehicle_type == 1 and not is_vehicle_engine_burning and not is_target_dead then
+                                NETWORK.NETWORK_REQUEST_CONTROL_OF_ENTITY(target)
+                                VEHICLE.SET_VEHICLE_ENGINE_HEALTH(target, -80)
+                            elseif net_aura.vehicle_type == 2 and is_vehicle_engine_running then
+                                FIRE.ADD_EXPLOSION(
+                                    target_pos.x, target_pos.y, target_pos.z,
+                                    65, 1, false, true, 0, false
+                                )
+                                VEHICLE.SET_VEHICLE_ENGINE_HEALTH(target, vehicle_health)
+                            elseif net_aura.vehicle_type == 3 then
+                                entities.delete_by_handle(target)
+                            end
+                        end
+
+                        if is_target_a_ped and not is_ped_in_vehicle and not is_target_player then
+                            local is_ped_burning <const> = FIRE.IS_ENTITY_ON_FIRE(target)
+                            local is_ped_stunned <const> = PED.IS_PED_BEING_STUNNED(target, false)
+                            local stungun_hash <const> = util.joaat("weapon_stungun")
+
+                            if net_aura.ped_type == 0 and not is_target_dead then
+                                FIRE.ADD_EXPLOSION(target_pos.x, target_pos.y, target_pos.z, 0, 1, true, false, 1, false)
+                            elseif net_aura.ped_type == 1 and not is_target_dead and not is_ped_burning then
+                                NETWORK.NETWORK_REQUEST_CONTROL_OF_ENTITY(target)
+                                FIRE.START_ENTITY_FIRE(target)
+                            elseif net_aura.ped_type == 2 and not is_target_dead and not is_ped_stunned then
+                                MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS(
+                                    target_pos.x, target_pos.y, target_pos.z + 1,
+                                    target_pos.x, target_pos.y, target_pos.z,
+                                    0, 0, stungun_hash, player_id, false, true, 1
+                                )
+                            elseif net_aura.ped_type == 3 then
+                                entities.delete_by_handle(target)
+                            end
+                        end
+                    end
+                    util.yield(10)
+                end
+            end
+        )
+
+        local aura_range_command_net = menu.slider(
+            net_lists["Aura"],
+            "Aura Range",
+            {"netaurarange"},
+            "",
+            5,
+            100,
+            20,
+            5,
+            function(value)
+                net_aura.range = value
+            end
+        )
+
+        menu.on_focus(aura_range_command_net, function()
+            net_aura.range_command_on_focus = true
+
+            util.create_tick_handler(function()
+                local player_pos <const> = players.get_position(player_id)
+                local red <const>, green <const>, blue <const> = get_hud_colour()
+
+                if not net_aura.range_command_on_focus then
+                    return false
+                end
+
+                GRAPHICS._DRAW_SPHERE(
+                    player_pos.x, player_pos.y, player_pos.z,
+                    net_aura.range,
+                    red, green, blue, 0.5
+                )
+            end)
+        end)
+
+        menu.on_blur(aura_range_command_net, function()
+            net_aura.range_command_on_focus = false
+        end)
+
+        menu.list_select(
+            net_lists["Aura"],
+            "Aura Vehicle Type",
+            {"netauravehicletype"},
+            "",
+            aura_vehicle_types,
+            0,
+            function(value)
+                net_aura.vehicle_type = value
+            end
+        )
+
+        menu.list_select(
+            net_lists["Aura"],
+            "Aura Ped Type",
+            {"netaurapedtype"},
+            "",
+            aura_ped_types,
+            0,
+            function(value)
+                net_aura.ped_type = value
+            end
+        )
+
+        local aura_ignores_net_list <const> = menu.list(net_lists["Aura"], "Aura Ignores")
+
+        menu.toggle(
+            aura_ignores_net_list,
+            "Ignore Vehicles",
+            {"netauranovehicles"},
+            "",
+            function(state)
+                net_aura.ignore_vehicles = state
+            end
+        )
+
+        menu.toggle(
+            aura_ignores_net_list,
+            "Ignore Peds",
+            {"netauranopeds"},
+            "",
+            function(state)
+                net_aura.ignore_peds = state
+            end
+        )
+
+        menu.toggle(
+            aura_ignores_net_list,
+            "Ignore Player Vehicles",
+            {"netauranoplayervehicles"},
+            "",
+            function(state)
+                net_aura.ignore_player_vehicles = state
+            end
         )
 
         ------------------------------
@@ -1353,94 +1852,83 @@ players.on_join(
             type = 0,
             ignore_vehicles = false,
             ignore_peds = false,
-            ignore_personal_vehicles = true
+            ignore_player_vehicles = false
         }
 
+        menu.divider(net_lists["Forcefield"], "Forcefield")
+
         menu.toggle(
-            forcefield_net_list,
+            net_lists["Forcefield"],
             "Forcefield",
-            {"forcefield"},
+            {"netforcefield"},
             "",
             function(state)
                 net_forcefield.is_enabled = state
-                if state then
-                    while net_forcefield.is_enabled do
-                        local targets = {}
-                        local player_pos <const> = players.get_position(player_id)
+
+                while net_forcefield.is_enabled do
+                    local targets = {}
+                    local player_pos <const> = players.get_position(player_id)
+
+                    if not net_forcefield.ignore_vehicles then
+                        local vehicles <const> = get_vehicles_in_range(player_pos, net_forcefield.range, net_forcefield.ignore_player_vehicles)
+
+                        for i = 1, #vehicles do
+                            table.insert(targets, vehicles[i])
+                        end
+                    end
+
+                    if not net_forcefield.ignore_peds then
+                        local peds <const> = get_peds_in_range(player_pos, net_forcefield.range, true)
+
+                        for i = 1, #peds do
+                            table.insert(targets, peds[i])
+                        end
+                    end
+
+                    for i, target in pairs(targets) do
+                        target = entities.pointer_to_handle(target)
                         local player_ped <const> = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id)
+                        local is_target_my_vehicle <const> = PED.GET_VEHICLE_PED_IS_IN(player_ped, true) == target
+                        local is_control_given <const> = NETWORK.NETWORK_REQUEST_CONTROL_OF_ENTITY(target)
+                        local is_forcefield_negative <const> = net_forcefield.type == 1
+                        local entity_type <const> = ENTITY.GET_ENTITY_TYPE(target)
+                        local is_entity_a_ped <const> = entity_type == 1
 
-                        if not net_forcefield.ignore_vehicles then
-                            local vehicles <const> = get_vehicles_in_range(player_pos, net_forcefield.range, net_forcefield.ignore_personal_vehicles)
+                        if not is_target_my_vehicle and is_control_given then
+                            local force = ENTITY.GET_ENTITY_COORDS(target)
 
-                            for i = 1, #vehicles do
-                                table.insert(targets, vehicles[i])
+                            v3.sub(force, player_pos)
+                            v3.normalise(force)
+                            v3.mul(force, net_forcefield.multiplier)
+
+                            if is_forcefield_negative then
+                                v3.mul(force, -1)
                             end
-                        end
 
-                        if not net_forcefield.ignore_peds then
-                            local peds <const> = get_peds_in_range(player_pos, net_forcefield.range, true)
-
-                            for i = 1, #peds do
-                                table.insert(targets, peds[i])
-                            end
-                        end
-
-                        for i, target in pairs(targets) do
-                            target = entities.pointer_to_handle(target)
-                            local is_target_my_vehicle <const> = PED.GET_VEHICLE_PED_IS_IN(player_ped, false) == target
-                            local is_control_given <const> = NETWORK.NETWORK_REQUEST_CONTROL_OF_ENTITY(target)
-                            local is_forcefield_negative <const> = net_forcefield.type == 1
-                            local is_entity_a_ped <const> = ENTITY.GET_ENTITY_TYPE(target) == 1
-
-                            if not is_target_my_vehicle and is_control_given then
-                                local force = ENTITY.GET_ENTITY_COORDS(target)
-
-                                v3.sub(force, player_pos)
-                                v3.normalise(force)
-                                v3.mul(force, net_forcefield.multiplier)
-
-                                if is_forcefield_negative then
-                                    v3.mul(force, -1)
-                                end
-
-                                if is_entity_a_ped then
-                                    PED.SET_PED_TO_RAGDOLL(
-                                        target,
-                                        500,
-                                        0,
-                                        0,
-                                        false,
-                                        false,
-                                        false
-                                    )
-                                end
-
-                                ENTITY.APPLY_FORCE_TO_ENTITY(
-                                    target,
-                                    3,
-                                    force.x,
-                                    force.y,
-                                    force.z,
-                                    0,
-                                    0,
-                                    0.5,
-                                    0,
-                                    false,
-                                    false,
-                                    true
+                            if is_entity_a_ped then
+                                PED.SET_PED_TO_RAGDOLL(
+                                    target, 500, 0, 0,
+                                    false, false, false
                                 )
                             end
+
+                            ENTITY.APPLY_FORCE_TO_ENTITY(
+                                target, 3,
+                                force.x, force.y, force.z,
+                                0, 0, 0.5, 0,
+                                false, false, true, false, false
+                            )
                         end
-                        util.yield(10)
                     end
+                    util.yield(10)
                 end
             end
         )
 
         local forcefield_range_command_net = menu.slider(
-            forcefield_net_list,
+            net_lists["Forcefield"],
             "Forcefield Range",
-            {"forcefieldrange"},
+            {"netforcefieldrange"},
             "",
             5,
             100,
@@ -1463,14 +1951,9 @@ players.on_join(
                 end
 
                 GRAPHICS._DRAW_SPHERE(
-                    player_pos.x,
-                    player_pos.y,
-                    player_pos.z,
+                    player_pos.x, player_pos.y, player_pos.z,
                     net_forcefield.range,
-                    red,
-                    green,
-                    blue,
-                    0.5
+                    red, green, blue, 0.5
                 )
             end)
         end)
@@ -1479,24 +1962,24 @@ players.on_join(
             net_forcefield.range_command_on_focus = false
         end)
 
-        menu.slider(
-            forcefield_net_list,
+        menu.slider_float(
+            net_lists["Forcefield"],
             "Forcefield Multiplier",
-            {"forcefieldmultiplier"},
+            {"netforcefieldmultiplier"},
             "",
-            1,
             10,
-            1,
-            1,
+            1000,
+            100,
+            10,
             function(value)
-                net_forcefield.multiplier = value * 0.5
+                net_forcefield.multiplier = value * 0.01
             end
         )
 
         menu.list_select(
-            forcefield_net_list,
+            net_lists["Forcefield"],
             "Forcefield Type",
-            {"forcefieldtype"},
+            {"netforcefieldtype"},
             "",
             forcefield_types,
             0,
@@ -1505,13 +1988,13 @@ players.on_join(
             end
         )
 
-        local forcefield_ignores_net_list = menu.list(forcefield_net_list, "Forcefield Ignores")
+        local forcefield_ignores_net_list <const> = menu.list(net_lists["Forcefield"], "Forcefield Ignores")
         menu.divider(forcefield_ignores_net_list, "Forcefield Ignores")
 
         menu.toggle(
             forcefield_ignores_net_list,
             "Ignore Vehicles",
-            {"forcefieldnovehicles"},
+            {"netforcefieldnovehicles"},
             "",
             function(state)
                 net_forcefield.ignore_vehicles = state
@@ -1521,7 +2004,7 @@ players.on_join(
         menu.toggle(
             forcefield_ignores_net_list,
             "Ignore Peds",
-            {"forcefieldnopeds"},
+            {"netforcefieldnopeds"},
             "",
             function(state)
                 net_forcefield.ignore_peds = state
@@ -1530,13 +2013,118 @@ players.on_join(
 
         menu.toggle(
             forcefield_ignores_net_list,
-            "Ignore Personal Vehicles",
-            {"forcefieldnopersonalvehicles"},
+            "Ignore Player Vehicles",
+            {"netforcefieldnoplayervehicles"},
             "",
             function(state)
-                net_forcefield.ignore_personal_vehicles = state
-            end,
-            true
+                net_forcefield.ignore_player_vehicles = state
+            end
+        )
+
+        ------------------------------
+        -- Fake Pickup Menu
+        ------------------------------
+
+        local fake_pickup = {
+            loop = false,
+            type = 0,
+            delay = 100
+        }
+
+        local function spawn_fake_pickup()
+            util.create_thread(function()
+                local objects <const> = fake_pickup_types[fake_pickup.type].objects
+                local pickup_name <const> = objects[math.random(1, #objects)]
+                local pickup_hash <const> = util.joaat(pickup_name)
+                local player_pos = players.get_position(player_id)
+                local pickup_pos = v3.new(player_pos.x, player_pos.y, player_pos.z + 2.25)
+                local player_ped <const> = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id)
+                local pickup_sound <const> = "Bus_Schedule_Pickup"
+                local pickup_sound_ref <const> = "DLC_PRISON_BREAK_HEIST_SOUNDS"
+
+                request_model(pickup_hash)
+
+                local pickup <const> = entities.create_object(pickup_hash, pickup_pos)
+
+                ENTITY.SET_ENTITY_COLLISION(pickup, false, true)
+                ENTITY.APPLY_FORCE_TO_ENTITY_CENTER_OF_MASS(
+                    pickup, 1, 0, 0, 0,
+                    true, false, true, true
+                )
+
+                repeat
+                    player_pos = players.get_position(player_id)
+                    pickup_pos = ENTITY.GET_ENTITY_COORDS(pickup, false)
+                    local is_height_reached = pickup_pos.z <= player_pos.z + 1.25
+
+                    util.yield(10)
+                until is_height_reached
+
+                AUDIO.PLAY_SOUND_FROM_COORD(
+                    -1, pickup_sound,
+                    player_pos.x, player_pos.y, player_pos.z,
+                    pickup_sound_ref, true, 1, false
+                )
+                entities.delete_by_handle(pickup)
+
+                util.stop_thread()
+            end)
+        end
+
+        menu.divider(net_lists["Fake Pickup"], "Fake Pickup")
+
+        menu.action(
+            net_lists["Fake Pickup"],
+            "Drop Fake Pickup",
+            {"dropfakepickup"},
+            "",
+            function()
+                spawn_fake_pickup()
+            end
+        )
+
+        menu.toggle(
+            net_lists["Fake Pickup"],
+            "Drop Fake Pickup Loop",
+            {"dropfakepickuploop"},
+            "",
+            function(state)
+                fake_pickup.loop = state
+
+                while fake_pickup.loop do
+                    spawn_fake_pickup()
+
+                    util.yield(fake_pickup.delay)
+                end
+            end
+        )
+
+        menu.list_select(
+            net_lists["Fake Pickup"],
+            "Fake Pickup Type",
+            {"fakepickuptype"},
+            "",
+            fake_pickup_types,
+            0,
+            function(value)
+                fake_pickup.type = value
+            end
+        )
+
+        local fake_pickup_other_net_list <const> = menu.list(net_lists["Fake Pickup"], "Other Settings")
+
+        menu.slider(
+            fake_pickup_other_net_list,
+            "Fake Pickup Delay",
+            {"fakepickupdelay"},
+            "",
+            50,
+            1000,
+            100,
+            50,
+            function(value)
+                fake_pickup.delay = value
+            end
         )
     end
 )
