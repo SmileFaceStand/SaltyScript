@@ -1,5 +1,98 @@
 Changelog
-This is just a quick hotfix
+This is a very big update, report any issue in the Discord
+
+Additions
+- Self > Aura
+    - Aura
+    - Aura Range
+    - Aura Vehicle Types
+        - Explode
+        - Burn
+        - EMP
+        - Delete
+    - Aura Ped Types
+        - Explode
+        - Burn
+        - Taze
+        - Delete
+    - Aura Ignores
+        - Ignore Vehicles
+        - Ignore Peds
+        - Ignore Player Vehicles
+- Players > Trolling
+    - Crush
+        - Crush
+        - Crush Loop
+        - Crush Speed
+        - Crush Vehicle
+            - Faggio
+            - Go Kart
+            - Zhaba
+            - Buzzard
+            - Insurgent
+            - Khanjali
+            - Phantom Wedge
+            - Armored Boxville
+            - Bus
+            - Blimp
+        - Other Settings
+            - Crush Delay
+            - Crush Height
+            - Crush Visible
+    - Ram
+        - Ram
+        - Ram Loop
+        - Ram Speed
+        - Ram Vehicle
+            - Faggio
+            - Go Kart
+            - Zhaba
+            - Buzzard
+            - Insurgent
+            - Khanjali
+            - Phantom Wedge
+            - Armored Boxville
+            - Bus
+            - Blimp
+        - Other Settings
+            - Ram Delay
+            - Ram Distance
+            - Ram Visible
+    - Aura
+        - Aura
+        - Aura Range
+        - Aura Vehicle Types
+            - Explode
+            - Burn
+            - EMP
+            - Delete
+        - Aura Ped Types
+            - Explode
+            - Burn
+            - EMP
+            - Delete
+        - Aura Ignores
+            - Ignore Vehicles
+            - Ignore Peds
+            - Ignore Player Vehicles
+    - Fake Pickup
+        - Drop Fake Pickup
+        - Drop Fake Pickup Loop
+        - Fake Pickup Type
+            - Money Bag
+            - Action Figure
+            - P's & Q's
+        - Other Settings
+            - Delay
+
+Adjustments
+- Now "Ignore Player Vehicles" is disabled by default
+- Now "Forcefield Multiplier" is a float, and can be decreased too
+- Moved functions in lib/smilescript
+- Moved sub lists in a table
+- Renamed "Entities" in "Objects"
+- Renamed "Ignore Personal Vehicles" in "Ignore Player Vehicles"
 
 Fixes
-- Fixed Forcefield sphere colour
+- Fixed PTFX Amount not increasing the PTFX Amount
+- Other improvements and bug fixes

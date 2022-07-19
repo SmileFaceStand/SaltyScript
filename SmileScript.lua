@@ -795,6 +795,8 @@ players.on_join(
         menu.divider(cages_net_list, "Cages")
         local forcefield_net_list = menu.list(trolling_net_list, "Forcefield")
         menu.divider(forcefield_net_list, "Forcefield")
+        local drop_vehicle_net_list = menu.list(trolling_net_list, "Drop Vehicle")
+        menu.divider(drop_vehicle_net_list, "Drop Vehicle")
 
         menu.click_slider(
             trolling_net_list,
