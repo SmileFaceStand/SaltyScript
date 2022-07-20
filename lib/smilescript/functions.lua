@@ -38,47 +38,33 @@ function get_hud_colour()
 end
 
 function request_model(model)
-    local is_model_loaded = STREAMING.HAS_MODEL_LOADED(model)
-
     STREAMING.REQUEST_MODEL(model)
 
-    while not is_model_loaded do
-        is_model_loaded = STREAMING.HAS_MODEL_LOADED(model)
-
+    while not STREAMING.HAS_MODEL_LOADED(model) do
         util.yield()
     end
 end
 
 function request_ptfx_asset(asset)
-    local is_ptfx_asset_loaded = STREAMING.HAS_NAMED_PTFX_ASSET_LOADED(asset)
-
     STREAMING.REQUEST_NAMED_PTFX_ASSET(asset)
 
-    while not is_ptfx_asset_loaded do
-        is_ptfx_asset_loaded = STREAMING.HAS_NAMED_PTFX_ASSET_LOADED(asset)
-
+    while not STREAMING.HAS_NAMED_PTFX_ASSET_LOADED(asset) do
         util.yield()
     end
 end
 
 function wait_session_transition(yield_time)
     yield_time = yield_time or 1000
-    local is_in_transition = util.is_session_transition_active()
 
-    while is_in_transition do
-        is_in_transition = util.is_session_transition_active()
-
+    while util.is_session_transition_active() do
         util.yield(yield_time)
     end
 end
 
 function wait_player_revive(player_id, yield_time)
     yield_time = yield_time or 250
-    local is_player_dead = PLAYER.IS_PLAYER_DEAD(player_id)
 
-    while is_player_dead do
-        is_player_dead = PLAYER.IS_PLAYER_DEAD(player_id)
-
+    while PLAYER.IS_PLAYER_DEAD(player_id) do
         util.yield(yield_time)
     end
 end
@@ -88,15 +74,13 @@ function kick_player_out_of_veh(player_id, yield_time, max_time)
     max_time = max_time or 1000
 
     local player_ped <const> = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id)
-    local is_player_in_vehicle = PED.IS_PED_IN_ANY_VEHICLE(player_ped)
     local player_root_ref <const> = menu.player_root(player_id)
     local kick_vehicle_command_ref <const> = menu.ref_by_rel_path(player_root_ref, "Trolling>Kick From Vehicle")
 
     menu.trigger_command(kick_vehicle_command_ref)
     start_alarm(max_time)
 
-    while is_player_in_vehicle do
-        is_player_in_vehicle = PED.IS_PED_IN_ANY_VEHICLE(player_ped)
+    while PED.IS_PED_IN_ANY_VEHICLE(player_ped) do
         local is_alarm_finished <const> = get_alarm()
 
         if is_alarm_finished then
@@ -108,7 +92,7 @@ function kick_player_out_of_veh(player_id, yield_time, max_time)
 end
 
 function get_random_pos_on_radius(pos, radius)
-    local angle = random_float(0, 2 * math.pi)
+    local angle <const> = random_float(0, 2 * math.pi)
     pos = v3.new(pos.x + math.cos(angle) * radius, pos.y + math.sin(angle) * radius, pos.z)
 
     return pos
