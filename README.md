@@ -1,4 +1,4 @@
-![SaltyScript Header](https://user-images.githubusercontent.com/109024520/186437295-e4b035fa-63ec-4d91-ada8-c1dd4ea29766.png)
+![SaltyScript Header](https://user-images.githubusercontent.com/109024520/186452039-69273d34-88f0-4358-ab86-cab97d624427.png)
 
 # SaltyScript
 SaltyScript is my main script, developed for Stand, using the Stand API. To join the Discord press [here](https://discord.gg/rejQB9jHQf).
