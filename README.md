@@ -1,7 +1,7 @@
 ![SaltyScript Header](https://user-images.githubusercontent.com/109024520/186437295-e4b035fa-63ec-4d91-ada8-c1dd4ea29766.png)
 
 # SaltyScript
-SmileScript is my main script, developed for Stand, using the Stand API. To join the Discord press [here](https://discord.gg/rejQB9jHQf).
+SaltyScript is my main script, developed for Stand, using the Stand API. To join the Discord press [here](https://discord.gg/rejQB9jHQf).
 
 ## Is it already completed?
 No, it isn't, not even nearly, now I’m introducing basic features that any script has, when it reaches version 1.0, it will mean that all the features I had thought of have been introduced. But this will not mean that it will stop having other functions added.
