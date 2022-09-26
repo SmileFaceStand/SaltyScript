@@ -15,14 +15,14 @@ local function random_float(min, max)
 end
 
 local function get_hud_colour()
-    local red_command_ref = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Red")
-    local green_command_ref = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Green")
-    local blue_command_ref = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Blue")
-    local alpha_command_ref = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Opacity")
-    local red = menu.get_value(red_command_ref)
-    local green = menu.get_value(green_command_ref)
-    local blue = menu.get_value(blue_command_ref)
-    local alpha = menu.get_value(alpha_command_ref)
+    local red_colour_ref = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Red")
+    local green_colour_ref = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Green")
+    local blue_colour_ref = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Blue")
+    local alpha_colour_ref = menu.ref_by_path("Stand>Settings>Appearance>Colours>HUD Colour>Opacity")
+    local red = menu.get_value(red_colour_ref)
+    local green = menu.get_value(green_colour_ref)
+    local blue = menu.get_value(blue_colour_ref)
+    local alpha = menu.get_value(alpha_colour_ref)
     return red, green, blue, alpha
 end
 
@@ -45,8 +45,8 @@ end
 local function kick_player_out_of_veh(player_id)
     local max_time = os.millis() + 1000
     local player_ped  = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id)
-    local kick_vehicle_command_ref = menu.ref_by_rel_path(menu.player_root(player_id), "Trolling>Kick From Vehicle")
-    menu.trigger_command(kick_vehicle_command_ref)
+    local kick_vehicle_ref = menu.ref_by_rel_path(menu.player_root(player_id), "Trolling>Kick From Vehicle")
+    menu.trigger_command(kick_vehicle_ref)
 
     while PED.IS_PED_IN_ANY_VEHICLE(player_ped) do
         if os.millis() >= max_time then
@@ -64,6 +64,8 @@ local function get_random_pos_on_radius(pos, radius)
 end
 
 local self = menu.list(menu.my_root(), "Self")
+local appearance = menu.list(menu.my_root(), "Appearance")
+local weapons = menu.list(menu.my_root(), "Weapons")
 local world = menu.list(menu.my_root(), "World")
 
 --##############################################################
@@ -90,25 +92,70 @@ menu.action(self, "Refill Armour", {"refillarmour"}, "", function()
     PED.SET_PED_ARMOUR(players.user_ped(), 50)
 end)
 
+--##############################################################
+--                          Appearance
+--##############################################################
+
 ----------------
--- Weapons
+-- Disguise
 ----------------
+
+-- Variables
+local disguise_object = 0
+local disguise_objects = {
+    [0] = "prop_bush_med_03",
+    [1] = "prop_tree_lficus_06",
+    [2] = "prop_palm_fan_03_b",
+    [3] = "prop_streetlight_01",
+    [4] = "prop_recyclebin_04_b" -- Good to clip the player under the terrain
+}
+local disguise_names = {
+    [0] = "Bush",
+    [1] = "Tree",
+    [2] = "Palm Tree",
+    [3] = "Street Light",
+    [4] = "Recycle Bin"
+}
 
 -- Buttons
-menu.divider(self, "Weapons")
+menu.divider(appearance, "Disguise")
 
-menu.toggle_loop(self, "Autoload Weapons", {"autoloadweapons"}, "Autoload all the weapons everytime you join a new session.", function()
-    players.on_join(function(player_id)
-        local my_player_id <const> = players.user()
+local disguise_state
+menu.toggle(appearance, "Disguise", {"disguise"}, "", function(state)
+    disguise_state = state
 
-        if player_id == my_player_id then
-            local all_weapons_command_ref <const> = menu.ref_by_path("Self>Weapons>Get Weapons>All Weapons")
+    if disguise_state then
+        local invisibility_select = menu.ref_by_path("Self>Appearance>Invisibility")
+        local object_hash = util.joaat(disguise_objects[disguise_object])
+        local player_pos = players.get_position(players.user())
+        request_model(object_hash)
+        local object = entities.create_object(object_hash, player_pos)
+        menu.set_value(invisibility_select, 2)
+        ENTITY.SET_ENTITY_COLLISION(object, false, false)
 
-            wait_session_transition()
-            menu.trigger_command(all_weapons_command_ref)
-            util.toast("Weapons loaded successfully. :)")
+        while disguise_state and players.exists(players.user()) do
+            player_pos = players.get_position(players.user())
+            local player_rot = ENTITY.GET_ENTITY_ROTATION(players.user_ped(), 5)
+            ENTITY.SET_ENTITY_COORDS(object, player_pos.x, player_pos.y, player_pos.z - 1, false, false, false, false)
+            ENTITY.SET_ENTITY_ROTATION(object, 0, 0, player_rot.z, false, false, false, false)
+            util.yield()
         end
-    end)
+
+        entities.delete_by_handle(object)
+        menu.set_value(invisibility_select, 0)
+    end
+end)
+
+local disguise_object_slider = menu.slider_text(
+    appearance, "Disguise Object", {"disguiseobject"}, "", disguise_names, function()end
+)
+
+util.create_tick_handler(function()
+    if not players.exists(players.user()) then
+        return false
+    end
+
+    disguise_object = menu.get_value(disguise_object_slider)
 end)
 
 ----------------
@@ -116,14 +163,60 @@ end)
 ----------------
 
 -- Buttons
-menu.divider(self, "Others")
+menu.divider(appearance, "Others")
 
-menu.slider(self, "Transparency", {"transparency"}, "", 0, 100, 100, 20, function(value)
+menu.slider(appearance, "Transparency", {"transparency"}, "", 0, 100, 100, 20, function(value)
     if value > 80 then
         ENTITY.RESET_ENTITY_ALPHA(players.user_ped())
     else
         ENTITY.SET_ENTITY_ALPHA(players.user_ped(), value * 2.55, false)
     end
+end)
+
+menu.toggle(appearance, "Disable Footsteps", {"disablefootsteps"}, "", function(state)
+    AUDIO._SET_PED_AUDIO_FOOTSTEP_LOUD(players.user_ped(), not state)
+end)
+
+--##############################################################
+--                            Weapons
+--##############################################################
+
+----------------
+-- Actions (IN DEVELOPMENT)
+----------------
+
+-- Variables
+local action = 0
+local actions = {
+    [0] = "Waypoint",
+    [1] = "Freeze",
+    [2] = "Cage",
+    [3] = "Kick",
+    [4] = "Crash"
+}
+
+----------------
+-- Others
+----------------
+
+-- Buttons
+menu.divider(weapons, "Others")
+
+menu.toggle_loop(weapons, "Autoload Weapons", {"autoloadweapons"}, "Autoload all the weapons everytime you join a new session.", function()
+    players.on_join(function(player_id)
+        local my_player_id = players.user()
+
+        if player_id == my_player_id then
+            local all_weapons_ref = menu.ref_by_path("Self>Weapons>Get Weapons>All Weapons")
+
+            while util.is_session_transition_active() do
+                util.yield()
+            end
+
+            menu.trigger_command(all_weapons_ref)
+            util.toast("Weapons loaded successfully. :)")
+        end
+    end)
 end)
 
 --##############################################################
@@ -135,11 +228,12 @@ end)
 ----------------
 
 -- Variables
-local s_forcefield_range = 10
+local s_forcefield_range = 20
 local s_forcefield = 0
 local s_forcefield_names = {
     [0] = "Push",
-    [1] = "Pull"
+    [1] = "Launch",
+    [2] = "Pull"
 }
 
 --Buttons
@@ -162,33 +256,35 @@ menu.toggle_loop(world, "Forcefield", {"sforcefield"}, "", function()
                 table.insert(_entities, ped)
             end
         end
-        for i, entity in pairs(_entities) do
+        for _, entity in pairs(_entities) do
             local player_vehicle = PED.GET_VEHICLE_PED_IS_IN(players.user_ped(), true)
             local entity_type = ENTITY.GET_ENTITY_TYPE(entity)
 
-            if NETWORK.NETWORK_REQUEST_CONTROL_OF_ENTITY(entity) and not (player_vehicle == entity) then
-                local force = ENTITY.GET_ENTITY_COORDS(entity)
-                v3.sub(force, player_pos)
-                v3.normalise(force)
-
-                if (s_forcefield == 1) then
-                    v3.mul(force, -1)
-                end
-                if (entity_type == 1) then
+            if NETWORK.NETWORK_REQUEST_CONTROL_OF_ENTITY(entity) and player_vehicle ~= entity then
+                if entity_type == 1 then
                     PED.SET_PED_TO_RAGDOLL(entity, 500, 0, 0, false, false, false)
                 end
+                if s_forcefield == 1 then
+                    ENTITY.APPLY_FORCE_TO_ENTITY(
+                        entity, 3, 0, 0, 1, 0, 0, 0.5, 0, false, false, true, false, false
+                    )
+                else
+                    local force = ENTITY.GET_ENTITY_COORDS(entity)
+                    v3.sub(force, player_pos)
+                    v3.normalise(force)
 
-                ENTITY.APPLY_FORCE_TO_ENTITY(
-                    entity, 3, force.x, force.y, force.z, 0, 0, 0.5, 0, false, false, true, false, false
-                )
+                    if s_forcefield == 2 then
+                        v3.mul(force, -1)
+                    end
+
+                    ENTITY.APPLY_FORCE_TO_ENTITY(
+                        entity, 3, force.x, force.y, force.z, 0, 0, 0.5, 0, false, false, true, false, false
+                    )
+                end
             end
         end
     end
 end)
-
---##############################################################
---                             Misc
---##############################################################
 
 local s_forcefield_direction_slider = menu.slider_text(
     world, "Forcefield Direction", {"sforcefieldirection"}, "", s_forcefield_names, function()end
@@ -203,7 +299,7 @@ util.create_tick_handler(function()
 end)
 
 local s_forcefield_range_slider = menu.slider_float(
-    world, "Forcefield Range", {"sforcefieldrange"}, "", 100, 10000, 1000, 10, function(value)
+    world, "Forcefield Range", {"sforcefieldrange"}, "", 100, 10000, 2000, 10, function(value)
         s_forcefield_range = value/100
 end)
 
@@ -227,6 +323,21 @@ menu.on_blur(s_forcefield_range_slider, function()
     s_forcefield_range_on_focus = false
 end)
 
+--##############################################################
+--                             Misc
+--##############################################################
+
+----------------
+-- Misc
+----------------
+
+-- Buttons
+menu.divider(menu.my_root(), "Misc")
+
+menu.hyperlink(menu.my_root(), "GitHub", "", "https://github.com/SmileFaceStand/SaltyScript", "")
+menu.hyperlink(menu.my_root(), "Discord", "", "https://discord.gg/rejQB9jHQf", "")
+menu.readonly(menu.my_root(), "Developer", "SmileFace")
+
 players.on_join(function(player_id)
     menu.divider(menu.player_root(player_id), "SaltyScript")
     local malicious = menu.list(menu.player_root(player_id), "Malicious")
@@ -242,6 +353,12 @@ players.on_join(function(player_id)
 
     -- Variables
     local explosion = 18
+    local explosions = {
+        [0] = 18,
+        [1] = 0,
+        [2] = 34,
+        [3] = 82
+    }
     local explosion_names = {
         [0] = "Small",
         [1] = "Medium",
@@ -262,21 +379,7 @@ players.on_join(function(player_id)
             return false
         end
 
-        local index = menu.get_value(explode_slider)
-
-        pluto_switch index do
-            case 1:
-                explosion = 0
-                break
-            case 2:
-                explosion = 34
-                break
-            case 3:
-                explosion = 82
-                break
-            pluto_default:
-                explosion = 18
-        end
+        explosion = explosions[menu.get_value(explode_slider)]
     end)
 
     menu.toggle_loop(malicious, "Explode Loop", {"customexplodeloop"}, "", function()
@@ -327,25 +430,96 @@ players.on_join(function(player_id)
     end)
 
     ----------------
+    -- Earrape
+    ----------------
+
+    -- Variables
+    local sound = 0
+    local sound_names = {
+        [0] = "Wasted",
+        [1] = "Low Pitched",
+        [2] = "High Pitched",
+        [3] = "Anxious",
+        [4] = "Alien",
+    }
+    local sounds = {
+        [0] = {
+            sound = "Bed",
+            sound_ref = "WastedSounds"
+        },
+        [1] = {
+            sound = "Short_Transition_In",
+            sound_ref = "PLAYER_SWITCH_CUSTOM_SOUNDSET"
+        },
+        [2] = {
+            sound = "TIMER_STOP",
+            sound_ref = "HUD_MINI_GAME_SOUNDSET",
+        },
+        [3] = {
+            sound = "CHECKPOINT_MISSED",
+            sound_ref = "HUD_MINI_GAME_SOUNDSET"
+        },
+        [4] = {
+            sound = "Goal",
+            sound_ref = "DLC_HEIST_HACKING_SNAKE_SOUNDS"
+        },
+        [5] = {
+            sound = "Air_Defences_Activated",
+            sound_ref = "DLC_sum20_Business_Battle_AC_Sounds"
+        }
+    }
+
+    -- Functions
+    local function earrape()
+        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id)
+        AUDIO.PLAY_SOUND_FROM_ENTITY(-1, sounds[sound].sound, player_ped, sounds[sound].sound_ref, true, true)
+    end
+
+    -- Buttons
+    menu.divider(malicious, "Earrape")
+
+    local earrape_slider = menu.slider_text(malicious, "Earrape", {"earrape"}, "", sound_names, function()
+        earrape()
+    end)
+
+    util.create_tick_handler(function()
+        if not players.exists(player_id) then
+            return false
+        end
+
+        sound = menu.get_value(earrape_slider)
+    end)
+
+    menu.toggle_loop(malicious, "Earrape Loop", {"earrapeloop"}, "", function()
+        if players.exists(player_id) then
+            earrape()
+        end
+    end)
+
+    ----------------
     -- Damage
     ----------------
 
-    --Buttons
+    -- Buttons
     menu.divider(malicious, "Damage")
 
     menu.action(malicious, "Shoot", {"shoot"}, "Only works when you are close to the player.", function()
-        local player_pos = players.get_position(player_id)
+        local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id)
+        local bone_index = PED.GET_PED_BONE_INDEX(player_ped, 0x796e)
+        local bone_pos = ENTITY.GET_WORLD_POSITION_OF_ENTITY_BONE(player_ped, bone_index)
         MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS(
-            player_pos.x, player_pos.y, player_pos.z + 1, player_pos.x, player_pos.y, player_pos.z,
+            bone_pos.x, bone_pos.y, bone_pos.z + 0.5, bone_pos.x, bone_pos.y, bone_pos.z,
             100, true, 453432689, players.user_ped(), false, true, 1
         )
     end)
 
     menu.toggle_loop(malicious, "Shoot Loop", {"shootloop"}, "Only works when you are close to the player.", function()
         if players.exists(player_id) then
-            local player_pos = players.get_position(player_id)
+            local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id)
+            local bone_index = PED.GET_PED_BONE_INDEX(player_ped, 0x796e)
+            local bone_pos = ENTITY.GET_WORLD_POSITION_OF_ENTITY_BONE(player_ped, bone_index)
             MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS(
-                player_pos.x, player_pos.y, player_pos.z + 1, player_pos.x, player_pos.y, player_pos.z,
+                bone_pos.x, bone_pos.y, bone_pos.z + 0.5, bone_pos.x, bone_pos.y, bone_pos.z,
                 100, true, 453432689, players.user_ped(), false, true, 1
             )
         end
@@ -366,7 +540,7 @@ players.on_join(function(player_id)
     -- Buttons
     menu.divider(malicious, "Others")
 
-    menu.toggle_loop(malicious, "Lag Player", {"lag"}, "Automatically freezes the player to make it work properly.", function()
+    menu.toggle_loop(malicious, "Lag", {"lag"}, "Automatically freezes the player to make it work properly.", function()
         if players.exists(player_id) then
             local freeze_toggle = menu.ref_by_rel_path(menu.player_root(player_id), "Trolling>Freeze")
             local player_pos = players.get_position(player_id)
@@ -390,6 +564,7 @@ players.on_join(function(player_id)
 
     -- Variables
     local cage = 0
+    local cage_invisible = false
     local cage_failed
     local cage_ids = {}
     local cage_names = {
@@ -487,7 +662,10 @@ players.on_join(function(player_id)
             table.insert(cage_ids, cage_object)
             ENTITY.SET_ENTITY_ROTATION(cage_object, object.rot.x, object.rot.y, object.rot.z, 1, true)
             ENTITY.FREEZE_ENTITY_POSITION(cage_object, true)
-            STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(cage_hash)
+
+            if cage_invisible then
+                ENTITY.SET_ENTITY_VISIBLE(cage_object, false, false)
+            end
         end
 
         if cage_failed then
@@ -546,6 +724,10 @@ players.on_join(function(player_id)
         end
     end)
 
+    menu.toggle(trolling, "Cage Invisible", {"cageinvisible"}, "", function(state)
+        cage_invisible = state
+    end)
+
     menu.action(trolling, "Uncage", {"uncage"}, "", function()
         remove_cage()
         util.toast("Player uncaged successfully. :)")
@@ -562,7 +744,17 @@ players.on_join(function(player_id)
         [1] = "Vertical"
     }
     local vehicle_invisible = false
-    local vehicle_name = "faggio"
+    local vehicle = "faggio"
+    local vehicles = {
+        [0] = "faggio",
+        [1] = "adder",
+        [2] = "insurgent",
+        [3] = "rallytruck",
+        [4] = "phantom2",
+        [5] = "howard",
+        [6] = "buzzard2",
+        [7] = "bus"
+    }
     local vehicle_names = {
         [0] = "Faggio",
         [1] = "Adder",
@@ -579,7 +771,7 @@ players.on_join(function(player_id)
 
     local ram_slider = menu.slider_text(trolling, "Ram", {"ram"}, "Howard and Buzzard explode on impact.", vehicle_names, function()
         local player_pos = players.get_position(player_id)
-        local vehicle_hash = util.joaat(vehicle_name)
+        local vehicle_hash = util.joaat(vehicle)
         request_model(vehicle_hash)
 
         if ram_direction == 0 then
@@ -601,33 +793,7 @@ players.on_join(function(player_id)
             return false
         end
 
-        local index = menu.get_value(ram_slider)
-
-        pluto_switch index do
-            case 1:
-                vehicle_name = "adder"
-                break
-            case 2:
-                vehicle_name = "insurgent"
-                break
-            case 3:
-                vehicle_name = "rallytruck"
-                break
-            case 4:
-                vehicle_name = "phantom2"
-                break
-            case 5:
-                vehicle_name = "howard"
-                break
-            case 6:
-                vehicle_name = "buzzard2"
-                break
-            case 7:
-                vehicle_name = "bus"
-                break
-            pluto_default:
-                vehicle_name = "faggio"
-        end
+        vehicle = vehicles[menu.get_value(ram_slider)]
     end)
 
     local ram_direction_slider = menu.slider_text(
@@ -639,15 +805,7 @@ players.on_join(function(player_id)
             return false
         end
 
-        local index = menu.get_value(ram_direction_slider)
-
-        pluto_switch index do
-            case 1:
-                ram_direction = 1
-                break
-            pluto_default:
-                ram_direction = 0
-        end
+        ram_direction = menu.get_value(ram_direction_slider)
     end)
 
     menu.toggle(trolling, "Ram Invisible", {"raminvisible"}, "", function(state)
@@ -659,11 +817,12 @@ players.on_join(function(player_id)
     ----------------
 
     -- Variables
-    local forcefield_range = 10
+    local forcefield_range = 20
     local forcefield = 0
     local forcefield_names = {
         [0] = "Push",
-        [1] = "Pull"
+        [1] = "Launch",
+        [2] = "Pull"
     }
 
     --Buttons
@@ -686,26 +845,32 @@ players.on_join(function(player_id)
                     table.insert(_entities, ped)
                 end
             end
-            for i, entity in pairs(_entities) do
+            for _, entity in pairs(_entities) do
                 local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id)
                 local player_vehicle = PED.GET_VEHICLE_PED_IS_IN(player_ped, true)
                 local entity_type = ENTITY.GET_ENTITY_TYPE(entity)
 
-                if NETWORK.NETWORK_REQUEST_CONTROL_OF_ENTITY(entity) and not (player_vehicle == entity) then
-                    local force = ENTITY.GET_ENTITY_COORDS(entity)
-                    v3.sub(force, player_pos)
-                    v3.normalise(force)
-
-                    if (forcefield == 1) then
-                        v3.mul(force, -1)
-                    end
-                    if (entity_type == 1) then
+                if NETWORK.NETWORK_REQUEST_CONTROL_OF_ENTITY(entity) and player_vehicle ~= entity then
+                    if entity_type == 1 then
                         PED.SET_PED_TO_RAGDOLL(entity, 500, 0, 0, false, false, false)
                     end
+                    if forcefield == 1 then
+                        ENTITY.APPLY_FORCE_TO_ENTITY(
+                            entity, 3, 0, 0, 1, 0, 0, 0.5, 0, false, false, true, false, false
+                        )
+                    else
+                        local force = ENTITY.GET_ENTITY_COORDS(entity)
+                        v3.sub(force, player_pos)
+                        v3.normalise(force)
 
-                    ENTITY.APPLY_FORCE_TO_ENTITY(
-                        entity, 3, force.x, force.y, force.z, 0, 0, 0.5, 0, false, false, true, false, false
-                    )
+                        if forcefield == 2 then
+                            v3.mul(force, -1)
+                        end
+
+                        ENTITY.APPLY_FORCE_TO_ENTITY(
+                            entity, 3, force.x, force.y, force.z, 0, 0, 0.5, 0, false, false, true, false, false
+                        )
+                    end
                 end
             end
         end
@@ -724,7 +889,7 @@ players.on_join(function(player_id)
     end)
 
     local forcefield_range_slider = menu.slider_float(
-        trolling, "Forcefield Range", {"forcefieldrange"}, "", 100, 10000, 1000, 10, function(value)
+        trolling, "Forcefield Range", {"forcefieldrange"}, "", 100, 10000, 2000, 10, function(value)
             forcefield_range = value/100
     end)
 
@@ -800,7 +965,7 @@ players.on_join(function(player_id)
                 pickup_pos = ENTITY.GET_ENTITY_COORDS(pickup, false)
                 local is_height_reached = pickup_pos.z <= player_pos.z + 1.25
 
-                util.yield(10)
+                util.yield()
             until is_height_reached
 
             AUDIO.PLAY_SOUND_FROM_COORD(
@@ -857,9 +1022,11 @@ players.on_join(function(player_id)
 
     menu.toggle_loop(trolling, "Taser Loop", {"taserloop"}, "Only works when you are close to the player.", function()
         if players.exists(player_id) then
-            local player_pos = players.get_position(player_id)
+            local player_ped = PLAYER.GET_PLAYER_PED_SCRIPT_INDEX(player_id)
+            local bone_index = PED.GET_PED_BONE_INDEX(player_ped, 0x796e)
+            local bone_pos = ENTITY.GET_WORLD_POSITION_OF_ENTITY_BONE(player_ped, bone_index)
             MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS(
-                player_pos.x, player_pos.y, player_pos.z + 1, player_pos.x, player_pos.y, player_pos.z,
+                bone_pos.x, bone_pos.y, bone_pos.z + 0.5, bone_pos.x, bone_pos.y, bone_pos.z,
                 0, true, 911657153, players.user_ped(), false, true, 1
             )
             util.yield(1000)
