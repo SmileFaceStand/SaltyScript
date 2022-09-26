@@ -18,7 +18,7 @@ Describe the feature on [Discord](https://discord.gg/rejQB9jHQf) and I will eval
 ## What can it do?
 - **Explosions**: Can Explode or Explode Loop a player with different sizes of epxlosions (Small, Medium, Big, Huge), can Atomize Loop and Firework Loop too.
 - **Flushes**: Can Flame Loop or Water Loop a player.
-- **Earrape**: Can Earrape or Earrape Loop a player with different sounds (Wasted, Low Pitched, High Pitched, Anxious, Alien)
+- **Earrape**: Can Earrape or Earrape Loop a player with different sounds (Wasted, Low Pitched, High Pitched, Anxious, Alien),
 - **Damage**: Can Shoot or Shoot Loop a player, can Molotov Loop too.
 - **Lag**: Can Lag a player using a method that works perfectly even networked.
 - **Cages**: Can Cage or Auto Cage a player with different cages (Standard, Tall, Box, Pipe, Stunt Tube).
@@ -28,7 +28,7 @@ Describe the feature on [Discord](https://discord.gg/rejQB9jHQf) and I will eval
 - **Launch**: Can Launch a player into the sky.
 - **Pee Loop**: **Most important feature** of the menu, can make a player pee.
 - **Increase Wanted Level**: Can Increase Wanted Level of a player.
-- **Disguise**: Can Disguise yourself as an object (Bush, Tree, Palm Tree, Street Light, Recycle Bin)
+- **Disguise**: Can Disguise yourself as an object (Bush, Tree, Palm Tree, Street Light, Recycle Bin),
 - **Autoload Weapons**: Can automatically load all the weapons everytime you join a new session.
 
 ## Installation
